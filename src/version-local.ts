@@ -56,7 +56,7 @@ export default class LocalVersioner extends BaseVersioner {
        * than whatever happens to be the latest minor at the time the build was run.
        *
        * In order to determine this we go through every release branch and and check "is-ancestor" for the
-       * merge-base of the release branch and master with the given commit.  The last release branch whos
+       * merge-base of the release branch and master with the given commit.  The last release branch whose
        * branch point is an ancestor of our commit should have its minor incremented and used as the version
        * below.
        */
@@ -116,6 +116,7 @@ export default class LocalVersioner extends BaseVersioner {
         `4.${releaseBranch.version.minor}`
       );
 
+      // FIXME: solve for minor version 0! This will throw for release-4.0.x
       const previousReleaseBranch = releaseBranches.find(
         (branch) => branch.version.minor === releaseBranch.version.minor - 1
       )!;
@@ -251,10 +252,7 @@ export default class LocalVersioner extends BaseVersioner {
   }
 
   private async getReleaseBranches(): Promise<ReleaseBranch[]> {
-    const allBranches = (await this.spawnGit(["branch", "-r"]))
-      .trim()
-      .split("\n")
-      .map((s) => s.trim());
+    const allBranches = await this.getAllBranches();
     const releaseBranchNames = allBranches.filter((branch) =>
       this.releaseBranchMatcher.test(branch.replace(/^origin\//, ""))
     );
@@ -285,6 +283,13 @@ export default class LocalVersioner extends BaseVersioner {
       (await this.spawnGit(["rev-list", "--count", `${from}..${to}`])).trim(),
       10
     );
+  }
+
+  private async getAllBranches(): Promise<string[]> {
+    return (await this.spawnGit(["branch", "-r"]))
+      .trim()
+      .split("\n")
+      .map((s) => s.trim());
   }
 
   private async getNearestReleaseBranch(releaseBranches: Array<ReleaseBranch>) {

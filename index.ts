@@ -1,7 +1,7 @@
 import LocalVersioner from "./src/version-local";
 
 const main = async () => {
-  const slackDesktop = "../slack/desktop";
+  const slackDesktop = "./desktop-test-fixture";
   const v = new LocalVersioner(slackDesktop);
 
   const version = await v.getVersionForHead();
