@@ -1,0 +1,22 @@
+{
+  "name": "deterministic-versions",
+  "version": "0.1.0",
+  "description": "deterministic git-based versioning for applications",
+  "main": "index.js",
+  "repository": "git@github.com:erickzhao/deterministic-versions.git",
+  "author": "Erick Zhao <erick@hotmail.ca>",
+  "license": "MIT",
+  "scripts" : {
+    "start": "ts-node index.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^17.0.31",
+    "@types/semver": "^7.3.9",
+    "ts-node": "^10.7.0",
+    "typescript": "^4.6.4"
+  },
+  "dependencies": {
+    "@malept/cross-spawn-promise": "^2.0.0",
+    "semver": "^7.3.7"
+  }
+}
