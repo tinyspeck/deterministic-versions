@@ -29,8 +29,12 @@ export default class LocalVersioner extends BaseVersioner {
     return spawn("git", command, { cwd: this.pathToRepo });
   }
 
+  async getVersionForSHA() {
+
+  }
+
   async getVersionForHead() {
-    const head = await this.getHead();
+    const head = await this.getHeadSHA();
     console.error("Determined head commit:", head);
 
     const currentBranch = await this.getCurrentBranch(head);
@@ -185,7 +189,7 @@ export default class LocalVersioner extends BaseVersioner {
     const zeroPad = (n: number, width: number) => {
       return `${n}`.padStart(width, "0");
     };
-    const currentBranch = await this.getCurrentBranch(await this.getHead());
+    const currentBranch = await this.getCurrentBranch(await this.getHeadSHA());
     if (this.releaseBranchMatcher.test(currentBranch)) {
       const version = await this.getVersionForHeadCached();
       const parsedVersion = semver.parse(version)!;
@@ -200,7 +204,7 @@ export default class LocalVersioner extends BaseVersioner {
     return "0";
   }
 
-  private async getHead() {
+  private async getHeadSHA() {
     return (await this.spawnGit(["rev-parse", "HEAD"])).trim();
   }
 
