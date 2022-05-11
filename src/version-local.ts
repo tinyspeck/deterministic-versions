@@ -249,29 +249,6 @@ export default class LocalVersioner extends BaseVersioner {
     return `origin/${possibleReleaseBranches[0]}`;
   }
 
-  private async getReleaseBranches(): Promise<ReleaseBranch[]> {
-    const allBranches = await this.getAllBranches();
-    const releaseBranchNames = allBranches.filter((branch) =>
-      this.releaseBranchMatcher.test(branch.replace(/^origin\//, ""))
-    );
-    return releaseBranchNames
-      .map((branchName) => {
-        return {
-          branch: branchName,
-          version: semver.parse(
-            `4.${
-              this.releaseBranchMatcher.exec(
-                branchName.replace(/^origin\//, "")
-              )![1]
-            }.0`
-          )!,
-        };
-      })
-      .sort((a, b) => {
-        return a.version.compare(b.version);
-      });
-  }
-
   private async getMergeBase(from: string, to: string) {
     return (await this.spawnGit(["merge-base", from, to])).trim();
   }
@@ -283,7 +260,7 @@ export default class LocalVersioner extends BaseVersioner {
     );
   }
 
-  private async getAllBranches(): Promise<string[]> {
+  protected async getAllBranches(): Promise<string[]> {
     return (await this.spawnGit(["branch", "-r"]))
       .trim()
       .split("\n")
