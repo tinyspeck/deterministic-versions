@@ -5,12 +5,21 @@ import fs from "fs";
 import { ReleaseBranch } from "./interfaces";
 import { BaseVersioner } from "./version-base";
 
+interface LocalVersionerOptions {
+  pathToRepo?: string;
+  defaultBranch?: string;
+}
+
 export default class LocalVersioner extends BaseVersioner {
   private pathToRepo: string;
 
-  constructor(pathToRepo: string = process.cwd()) {
+  constructor(opts: LocalVersionerOptions) {
     super();
-    this.pathToRepo = path.resolve(pathToRepo);
+    this.pathToRepo = opts.pathToRepo
+      ? path.resolve(opts.pathToRepo)
+      : process.cwd();
+
+    this.DEFAULT_BRANCH = opts.defaultBranch || "main";
 
     if (!fs.existsSync(this.pathToRepo)) {
       throw new Error(

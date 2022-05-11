@@ -2,7 +2,7 @@ export abstract class BaseVersioner {
   abstract getVersionForHead(): Promise<string>;
   abstract getMASBuildVersion(): Promise<string>;
 
-  protected DEFAULT_BRANCH = "master";
+  protected DEFAULT_BRANCH: string = "main";
   protected releaseBranchMatcher = /^(?:origin\/)?release-4\.([0-9]+)\.x$/;
   protected UNSAFE_BRANCH_PATCH = 65535; // This is the highest possible build number for an appx build
 
