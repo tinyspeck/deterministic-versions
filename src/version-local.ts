@@ -29,16 +29,15 @@ export default class LocalVersioner extends BaseVersioner {
     return spawn("git", command, { cwd: this.pathToRepo });
   }
 
-  async getVersionForSHA() {
-
-  }
-
   async getVersionForHead() {
     const head = await this.getHeadSHA();
     console.error("Determined head commit:", head);
+    return await this.getVersionForCommit(head);
+  }
 
-    const currentBranch = await this.getCurrentBranch(head);
-    console.error("Determined current branch:", currentBranch);
+  async getVersionForCommit(sha: string) {
+    const currentBranch = await this.getBranchForCommit(sha);
+    console.error("Determined branch for commit:", currentBranch);
 
     const releaseBranches = await this.getReleaseBranches();
 
@@ -73,10 +72,10 @@ export default class LocalVersioner extends BaseVersioner {
             `origin/${this.DEFAULT_BRANCH}`
           );
           // If we are literally on the merge point consider it not an ancestor
-          if (releaseBranchPoint === head) {
+          if (releaseBranchPoint === sha) {
             isAncestor = false;
           } else {
-            await this.getMergeBase(releaseBranchPoint, head);
+            await this.getMergeBase(releaseBranchPoint, sha);
             isAncestor = true;
           }
         } catch {}
@@ -95,7 +94,7 @@ export default class LocalVersioner extends BaseVersioner {
       );
       const commitsSinceLatestReleaseBranch = await this.getDistance(
         firstCommitInLatestRelease,
-        head
+        sha
       );
       console.error(
         `${commitsSinceLatestReleaseBranch} commits on ${this.DEFAULT_BRANCH} since the last minor was branched`
@@ -151,7 +150,7 @@ export default class LocalVersioner extends BaseVersioner {
 
       const commitsInCurrentRelease = await this.getDistance(
         firstCommitInCurrentRelease,
-        head
+        sha
       );
       console.error(
         "Calculated that there are",
@@ -159,7 +158,7 @@ export default class LocalVersioner extends BaseVersioner {
         "commits on the",
         currentBranch,
         "branch since its inception till",
-        head
+        sha
       );
 
       return `4.${releaseBranch.version.minor}.${
@@ -189,7 +188,9 @@ export default class LocalVersioner extends BaseVersioner {
     const zeroPad = (n: number, width: number) => {
       return `${n}`.padStart(width, "0");
     };
-    const currentBranch = await this.getCurrentBranch(await this.getHeadSHA());
+    const currentBranch = await this.getBranchForCommit(
+      await this.getHeadSHA()
+    );
     if (this.releaseBranchMatcher.test(currentBranch)) {
       const version = await this.getVersionForHeadCached();
       const parsedVersion = semver.parse(version)!;
@@ -208,51 +209,35 @@ export default class LocalVersioner extends BaseVersioner {
     return (await this.spawnGit(["rev-parse", "HEAD"])).trim();
   }
 
-  private async getCurrentBranch(backupSha: string) {
-    const currentBranch = (
-      await this.spawnGit(["rev-parse", "--abbrev-ref", "HEAD"])
-    ).trim();
-    if (currentBranch === "HEAD") {
-      console.error(
-        "Determined current HEAD is orphaned, scanning release branches"
-      );
-      const possibleBranches = (
-        await this.spawnGit(["branch", "--contains", backupSha, "--remote"])
-      )
-        .trim()
-        .split("\n")
-        .map((b) => b.trim())
-        .filter((b) => !b.includes(" -> "))
-        .map((b) => b.replace(/^origin\//, ""));
-      const possibleReleaseBranches = possibleBranches.filter(
-        (branch) =>
-          this.releaseBranchMatcher.test(branch) ||
-          branch === this.DEFAULT_BRANCH
-      );
-      if (possibleReleaseBranches.length) {
-        console.error(
-          `Found multiple possible release branches "${possibleReleaseBranches.join(
-            ", "
-          )}", using the oldest one`
-        );
-        possibleReleaseBranches.sort((a, b) => {
-          if (a === this.DEFAULT_BRANCH) return -1;
-          if (b === this.DEFAULT_BRANCH) return 1;
-          const [, aMinor] = this.releaseBranchMatcher.exec(a)!;
-          const [, bMinor] = this.releaseBranchMatcher.exec(b)!;
-          return parseInt(aMinor, 10) - parseInt(bMinor, 10);
-        });
-        console.error(
-          `Determined branch order "${possibleReleaseBranches.join(", ")}"`
-        );
-        return `origin/${possibleReleaseBranches[0]}`;
-      } else {
-        console.error(
-          "Current HEAD does not appear on release branches, using HEAD as branch name"
-        );
-      }
-    }
-    return currentBranch;
+  private async getBranchForCommit(SHA: string) {
+    const possibleBranches = (
+      await this.spawnGit(["branch", "--contains", SHA, "--remote"])
+    )
+      .trim()
+      .split("\n")
+      .map((b) => b.trim())
+      .filter((b) => !b.includes(" -> "))
+      .map((b) => b.replace(/^origin\//, ""));
+    const possibleReleaseBranches = possibleBranches.filter(
+      (branch) =>
+        this.releaseBranchMatcher.test(branch) || branch === this.DEFAULT_BRANCH
+    );
+    console.error(
+      `Found release branch(es) [${possibleReleaseBranches.join(", ")}].`
+    );
+    possibleReleaseBranches.sort((a, b) => {
+      if (a === this.DEFAULT_BRANCH) return -1;
+      if (b === this.DEFAULT_BRANCH) return 1;
+      const [, aMinor] = this.releaseBranchMatcher.exec(a)!;
+      const [, bMinor] = this.releaseBranchMatcher.exec(b)!;
+      return parseInt(aMinor, 10) - parseInt(bMinor, 10);
+    });
+    console.error(
+      `Determined branch order [${possibleReleaseBranches.join(
+        ", "
+      )}]. Using first one.`
+    );
+    return `origin/${possibleReleaseBranches[0]}`;
   }
 
   private async getReleaseBranches(): Promise<ReleaseBranch[]> {
