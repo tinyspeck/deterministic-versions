@@ -55,7 +55,7 @@ export default class LocalVersioner extends BaseVersioner {
       currentBranch === `origin/${this.DEFAULT_BRANCH}`
     ) {
       /**
-       * If we're on master then the version === 4.{next_minor}.{commits_since_branch_of_last_minor}
+       * If we're on master then the version === {current_major}.{next_minor}.{commits_since_branch_of_last_minor}
        * We need to calculate next_minor though as this may be a commit between two minor releases
        * E.g.
        *
@@ -91,10 +91,11 @@ export default class LocalVersioner extends BaseVersioner {
         if (!isAncestor) break;
         lastReleaseBranchWithAncestor = releaseBranch;
       }
+      const currentMajor = lastReleaseBranchWithAncestor.version.major;
       const nextMinor = lastReleaseBranchWithAncestor.version.minor + 1;
       console.error(
         `On ${this.DEFAULT_BRANCH} so the version is considered to be the next unreleased minor`,
-        `4.${nextMinor}`
+        `${currentMajor}.${nextMinor}`
       );
 
       const firstCommitInLatestRelease = await this.getMergeBase(
@@ -109,14 +110,14 @@ export default class LocalVersioner extends BaseVersioner {
         `${commitsSinceLatestReleaseBranch} commits on ${this.DEFAULT_BRANCH} since the last minor was branched`
       );
 
-      return `4.${nextMinor}.${commitsSinceLatestReleaseBranch}`;
+      return `${currentMajor}.${nextMinor}.${commitsSinceLatestReleaseBranch}`;
     } else if (this.releaseBranchMatcher.test(currentBranch)) {
-      // If we're on a release branch then the version === 4.{current_minor}.{commits_since_branch_of_minor + commits_on_master_between_last_branch_and_this_branch}
-      const releaseBranch = releaseBranches.find((branch) =>
-        currentBranch.startsWith("origin/")
-          ? branch.branch === currentBranch
-          : branch.branch === `origin/${currentBranch}`
+      // If we're on a release branch then the version === {current_major}.{current_minor}.{commits_since_branch_of_minor + commits_on_master_between_last_branch_and_this_branch}
+      const releaseBranchIndex = releaseBranches.findIndex(
+        (branch) => branch.branch === currentBranch.replace(/^origin\//, "")
       );
+      const releaseBranch = releaseBranches[releaseBranchIndex];
+
       if (!releaseBranch) {
         throw new Error(
           "Failed to find remote branch for current release branch, ensure it is pushed to the remote"
@@ -125,56 +126,68 @@ export default class LocalVersioner extends BaseVersioner {
 
       console.error(
         "On an active release branch so the version is considered to be the current minor",
-        `4.${releaseBranch.version.minor}`
+        `${releaseBranch.version.major}.${releaseBranch.version.minor}`
       );
 
-      // FIXME: solve for minor version 0! This will throw for release-4.0.x
-      const previousReleaseBranch = releaseBranches.find(
-        (branch) => branch.version.minor === releaseBranch.version.minor - 1
-      )!;
-      console.error(
-        "Determined previous release branch to be:",
-        previousReleaseBranch.branch
-      );
+      // If we're on the first-ever release branch, we count versions from the dawn of time
+      if (releaseBranchIndex === 0) {
+        const firstCommit = (
+          await this.spawnGit(["rev-list", "--max-parents=0", "HEAD"])
+        ).trim();
 
-      const firstCommitInPreviousRelease = await this.getMergeBase(
-        this.DEFAULT_BRANCH,
-        previousReleaseBranch.branch
-      );
-      const firstCommitInCurrentRelease = await this.getMergeBase(
-        this.DEFAULT_BRANCH,
-        releaseBranch.branch
-      );
-      const commitsOnDefaultBranchBetweenReleases = await this.getDistance(
-        firstCommitInPreviousRelease,
-        firstCommitInCurrentRelease
-      );
-      console.error(
-        "Calculated that there were",
-        commitsOnDefaultBranchBetweenReleases,
-        "commits on the",
-        this.DEFAULT_BRANCH,
-        "branch between the previous release and this release"
-      );
+        const commitsSinceInitialCommit = await this.getDistance(
+          firstCommit,
+          sha
+        );
 
-      const commitsInCurrentRelease = await this.getDistance(
-        firstCommitInCurrentRelease,
-        sha
-      );
-      console.error(
-        "Calculated that there are",
-        commitsInCurrentRelease,
-        "commits on the",
-        currentBranch,
-        "branch since its inception till",
-        sha
-      );
+        return `${releaseBranch.version.major}.${releaseBranch.version.minor}.${commitsSinceInitialCommit}`;
+      } else {
+        const previousReleaseBranch = releaseBranches[releaseBranchIndex - 1];
+        console.log(previousReleaseBranch.version, releaseBranch.version);
+        console.error(
+          "Determined previous release branch to be:",
+          previousReleaseBranch.branch
+        );
 
-      return `4.${releaseBranch.version.minor}.${
-        commitsInCurrentRelease + commitsOnDefaultBranchBetweenReleases
-      }`;
+        const firstCommitInPreviousRelease = await this.getMergeBase(
+          this.DEFAULT_BRANCH,
+          previousReleaseBranch.branch
+        );
+        const firstCommitInCurrentRelease = await this.getMergeBase(
+          this.DEFAULT_BRANCH,
+          releaseBranch.branch
+        );
+        const commitsOnDefaultBranchBetweenReleases = await this.getDistance(
+          firstCommitInPreviousRelease,
+          firstCommitInCurrentRelease
+        );
+        console.error(
+          "Calculated that there were",
+          commitsOnDefaultBranchBetweenReleases,
+          "commits on the",
+          this.DEFAULT_BRANCH,
+          "branch between the previous release and this release"
+        );
+
+        const commitsInCurrentRelease = await this.getDistance(
+          firstCommitInCurrentRelease,
+          sha
+        );
+        console.error(
+          "Calculated that there are",
+          commitsInCurrentRelease,
+          "commits on the",
+          currentBranch,
+          "branch since its inception till",
+          sha
+        );
+
+        return `${releaseBranch.version.major}.${releaseBranch.version.minor}.${
+          commitsInCurrentRelease + commitsOnDefaultBranchBetweenReleases
+        }`;
+      }
     } else {
-      // If we're on a random branch the version number should obviously be garbage yet also be valid, a good middle ground is 4.{nearest_minor_branch}.65536
+      // If we're on a random branch the version number should obviously be garbage yet also be valid, a good middle ground is {nearest_major_branch}.{nearest_minor_branch}.65535
       const nearestReleaseBranch = await this.getNearestReleaseBranch(
         releaseBranches
       );
@@ -183,7 +196,7 @@ export default class LocalVersioner extends BaseVersioner {
         "On a non-release branch, determined the nearest release branch is:",
         nearestReleaseBranch.branch
       );
-      return `4.${nearestReleaseBranch.version.minor}.${this.UNSAFE_BRANCH_PATCH}`;
+      return `${nearestReleaseBranch.version.major}.${nearestReleaseBranch.version.minor}.${this.UNSAFE_BRANCH_PATCH}`;
     }
   }
 
@@ -294,7 +307,7 @@ export default class LocalVersioner extends BaseVersioner {
      * and is handled separately.
      */
 
-    // If we're on a random branch the version number should obviously be garbage yet also be valid, a good middle ground is 4.{nearest_minor_branch}.65536
+    // If we're on a random branch the version number should obviously be garbage yet also be valid, a good middle ground is {nearest_major_branch}.{nearest_minor_branch}.65536
     let nearestReleaseBranch = {
       branch: this.DEFAULT_BRANCH,
       version: semver

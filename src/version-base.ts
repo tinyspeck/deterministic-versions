@@ -8,7 +8,8 @@ export abstract class BaseVersioner {
   protected abstract getAllBranches(): Promise<string[]>;
 
   protected DEFAULT_BRANCH: string = "main";
-  protected releaseBranchMatcher = /^(?:origin\/)?release-4\.([0-9]+)\.x$/;
+  protected releaseBranchMatcher =
+    /^(?:origin\/)?release-([0-9]+)\.([0-9]+)\.x$/;
   protected UNSAFE_BRANCH_PATCH = 65535; // This is the highest possible build number for an appx build
 
   private cachedVersion: string | null = null;
@@ -24,20 +25,17 @@ export abstract class BaseVersioner {
 
   protected async getReleaseBranches(): Promise<ReleaseBranch[]> {
     const allBranches = await this.getAllBranches();
-    const releaseBranchNames = allBranches.filter((branch) =>
-      this.releaseBranchMatcher.test(branch.replace(/^origin\//, ""))
-    );
+    const releaseBranchNames = allBranches
+      .map((branch) =>
+        this.releaseBranchMatcher.exec(branch.replace(/^origin\//, ""))
+      )
+      .filter((branch) => branch !== null) as RegExpExecArray[];
+
     return releaseBranchNames
-      .map((branchName) => {
+      .map(([branchName, major, minor]) => {
         return {
           branch: branchName,
-          version: semver.parse(
-            `4.${
-              this.releaseBranchMatcher.exec(
-                branchName.replace(/^origin\//, "")
-              )![1]
-            }.0`
-          )!,
+          version: semver.parse(`${major}.${minor}.0`)!,
         };
       })
       .sort((a, b) => {
