@@ -1,4 +1,5 @@
 import path from "path";
+import semver from "semver";
 import LocalVersioner from "../src/version-local";
 
 describe("Local Versioner", () => {
@@ -15,5 +16,17 @@ describe("Local Versioner", () => {
   it("fetches the version from the default branch", async () => {
     const latestVersion = await v.getVersionForHead();
     expect(latestVersion).toBe("4.2.4");
+  });
+
+  it("returns 65535 patch number for feature branch off of trunk", async () => {
+    const version = await v.getVersionForCommit("499537a");
+    const parsed = semver.parse(version);
+    expect(parsed?.patch).toBe(0xffff);
+  });
+
+  it("returns 65535 patch number for feature branch off of release branch", async () => {
+    const version = await v.getVersionForCommit("57deab3");
+    const parsed = semver.parse(version);
+    expect(parsed?.patch).toBe(0xffff);
   });
 });
