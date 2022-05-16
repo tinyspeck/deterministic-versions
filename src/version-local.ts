@@ -143,7 +143,6 @@ export default class LocalVersioner extends BaseVersioner {
         return `${releaseBranch.version.major}.${releaseBranch.version.minor}.${commitsSinceInitialCommit}`;
       } else {
         const previousReleaseBranch = releaseBranches[releaseBranchIndex - 1];
-        console.log(previousReleaseBranch.version, releaseBranch.version);
         console.error(
           "Determined previous release branch to be:",
           previousReleaseBranch.branch
