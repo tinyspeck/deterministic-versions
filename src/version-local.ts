@@ -72,45 +72,53 @@ export default class LocalVersioner extends BaseVersioner {
        * branch point is an ancestor of our commit should have its minor incremented and used as the version
        * below.
        */
-      let lastReleaseBranchWithAncestor = releaseBranches[0];
+      let lastReleaseBranchWithAncestor = undefined;
       for (const releaseBranch of releaseBranches) {
         let isAncestor = false;
-        try {
-          const releaseBranchPoint = await this.getMergeBase(
-            releaseBranch.branch,
-            `origin/${this.DEFAULT_BRANCH}`
-          );
-          // If we are literally on the merge point consider it not an ancestor
-          if (releaseBranchPoint === sha) {
-            isAncestor = false;
-          } else {
-            await this.getMergeBase(releaseBranchPoint, sha);
-            isAncestor = true;
-          }
-        } catch {}
+        const releaseBranchPoint = await this.getMergeBase(
+          releaseBranch.branch,
+          `origin/${this.DEFAULT_BRANCH}`
+        );
+        // If we are literally on the merge point consider it not an ancestor
+        if (releaseBranchPoint === sha) {
+          isAncestor = false;
+        } else {
+          isAncestor = await this.isAncestor(releaseBranchPoint, sha);
+        }
         if (!isAncestor) break;
         lastReleaseBranchWithAncestor = releaseBranch;
       }
-      const currentMajor = lastReleaseBranchWithAncestor.version.major;
-      const nextMinor = lastReleaseBranchWithAncestor.version.minor + 1;
-      console.error(
-        `On ${this.DEFAULT_BRANCH} so the version is considered to be the next unreleased minor`,
-        `${currentMajor}.${nextMinor}`
-      );
 
-      const firstCommitInLatestRelease = await this.getMergeBase(
-        `origin/${this.DEFAULT_BRANCH}`,
-        lastReleaseBranchWithAncestor.branch
-      );
-      const commitsSinceLatestReleaseBranch = await this.getDistance(
-        firstCommitInLatestRelease,
-        sha
-      );
-      console.error(
-        `${commitsSinceLatestReleaseBranch} commits on ${this.DEFAULT_BRANCH} since the last minor was branched`
-      );
+      if (lastReleaseBranchWithAncestor) {
+        const targetMajor = lastReleaseBranchWithAncestor.version.major;
+        const targetMinor = lastReleaseBranchWithAncestor.version.minor + 1;
 
-      return `${currentMajor}.${nextMinor}.${commitsSinceLatestReleaseBranch}`;
+        console.error(
+          `On ${this.DEFAULT_BRANCH} so the version is considered to be the next unreleased minor`,
+          `${targetMajor}.${targetMinor}`
+        );
+
+        const firstCommitInLatestRelease = await this.getMergeBase(
+          `origin/${this.DEFAULT_BRANCH}`,
+          lastReleaseBranchWithAncestor.branch
+        );
+        const commitsSinceLatestReleaseBranch = await this.getDistance(
+          firstCommitInLatestRelease,
+          sha
+        );
+        console.error(
+          `${commitsSinceLatestReleaseBranch} commits on ${this.DEFAULT_BRANCH} since the last minor was branched`
+        );
+
+        return `${targetMajor}.${targetMinor}.${commitsSinceLatestReleaseBranch}`;
+      } else {
+        const firstCommit = await this.getFirstCommit();
+        const commitsSinceInitialCommit = await this.getDistance(
+          firstCommit,
+          sha
+        );
+        return `0.0.${commitsSinceInitialCommit}`;
+      }
     } else if (this.releaseBranchMatcher.test(currentBranch)) {
       // If we're on a release branch then the version === {current_major}.{current_minor}.{commits_since_branch_of_minor + commits_on_master_between_last_branch_and_this_branch}
       const releaseBranchIndex = releaseBranches.findIndex(
@@ -131,10 +139,7 @@ export default class LocalVersioner extends BaseVersioner {
 
       // If we're on the first-ever release branch, we count versions from the dawn of time
       if (releaseBranchIndex === 0) {
-        const firstCommit = (
-          await this.spawnGit(["rev-list", "--max-parents=0", "HEAD"])
-        ).trim();
-
+        const firstCommit = await this.getFirstCommit();
         const commitsSinceInitialCommit = await this.getDistance(
           firstCommit,
           sha
@@ -262,7 +267,28 @@ export default class LocalVersioner extends BaseVersioner {
   }
 
   private async getMergeBase(from: string, to: string) {
-    return (await this.spawnGit(["merge-base", from, to])).trim();
+    return (await this.spawnGit(["merge-base", from, to])).slice(0, 7).trim();
+  }
+
+  private async getFirstCommit() {
+    return (await this.spawnGit(["rev-list", "--max-parents=0", "HEAD"]))
+      .slice(0, 7)
+      .trim();
+  }
+
+  private async isAncestor(from: string, to: string) {
+    /**
+     * --is-ancestor
+     * Check if the first <commit> is an ancestor of the second <commit>,
+     * and exit with status 0 if true, or with status 1 if not.
+     * Errors are signaled by a non-zero status that is not 1.
+     */
+    try {
+      await this.spawnGit(["merge-base", "--is-ancestor", from, to]);
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   private async getDistance(from: string, to: string) {

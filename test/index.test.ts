@@ -13,20 +13,18 @@ describe("Local Versioner", () => {
     console.error = jest.fn();
   });
 
-  it("generates the correct version from the default branch", async () => {
+  it("generates the correct version from the default branch HEAD", async () => {
     const latestVersion = await v.getVersionForHead();
     expect(latestVersion).toBe("4.2.4");
   });
-
-  it.todo(
-    "generates the correct version for the default branch before any release"
-  );
 
   it.each([
     ["the tip of a release branch (release-4.1.x)", "ece1c3f", "4.1.8"],
     ["a commit on a release branch (release-4.1.x)", "c95b710", "4.1.7"],
     ["from a different major version (release-3.2.x)", "21c5383", "3.2.3"],
     ["the first minor release branch (release-1.0.x)", "b2bcb99", "1.0.2"],
+    ["the default branch before any release branches", "829eb2f", "0.0.1"],
+    ["the branch point for a release branch", "4507940", "4.1.6"],
   ])(
     "generates the correct version from %s",
     async (_, sha, expectedVersion) => {
