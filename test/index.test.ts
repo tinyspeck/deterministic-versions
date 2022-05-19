@@ -25,6 +25,11 @@ describe("Local Versioner", () => {
     ["the first minor release branch (release-1.0.x)", "b2bcb99", "1.0.2"],
     ["the default branch before any release branches", "829eb2f", "0.0.1"],
     ["the branch point for a release branch", "4507940", "4.1.6"],
+    [
+      "a full length commit SHA",
+      "dc328b57827d8619719f1783a21b05968652eaf3",
+      "4.2.4",
+    ],
   ])(
     "generates the correct version from %s",
     async (_, sha, expectedVersion) => {
