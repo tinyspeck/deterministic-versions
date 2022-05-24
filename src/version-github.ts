@@ -1,7 +1,8 @@
 import { BaseVersioner } from "./version-base";
 import { Octokit } from "@octokit/rest";
+import dotenv from "dotenv";
 
-// TODO(erickzhao): implement github strategy
+dotenv.config();
 
 interface GitHubVersionerOptions {
   owner: string;
@@ -9,7 +10,7 @@ interface GitHubVersionerOptions {
 }
 
 export default class GitHubVersioner extends BaseVersioner {
-  private gitHub = new Octokit();
+  private gitHub: Octokit;
   private owner: string;
   private repo: string;
 
@@ -17,6 +18,7 @@ export default class GitHubVersioner extends BaseVersioner {
     super();
     this.owner = opts.owner;
     this.repo = opts.repo;
+    this.gitHub = new Octokit({ auth: process.env.GITHUB_TOKEN ?? undefined });
   }
 
   public async getVersionForHead(): Promise<string> {
