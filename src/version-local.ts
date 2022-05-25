@@ -38,12 +38,6 @@ export default class LocalVersioner extends BaseVersioner {
     return spawn("git", command, { cwd: this.pathToRepo });
   }
 
-  async getVersionForHead() {
-    const head = await this.getHeadSHA();
-    console.error("Determined head commit:", head);
-    return await this.getVersionForCommit(head);
-  }
-
   async getVersionForCommit(sha: string) {
     const currentBranch = await this.getBranchForCommit(sha);
     console.error("Determined branch for commit:", currentBranch);
@@ -213,11 +207,11 @@ export default class LocalVersioner extends BaseVersioner {
     return "0";
   }
 
-  private async getHeadSHA() {
+  protected async getHeadSHA() {
     return (await this.spawnGit(["rev-parse", "HEAD"])).trim();
   }
 
-  private async getBranchForCommit(SHA: string) {
+  protected async getBranchForCommit(SHA: string) {
     const possibleBranches = (
       await this.spawnGit(["branch", "--contains", SHA, "--remote"])
     )

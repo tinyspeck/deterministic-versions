@@ -23,15 +23,6 @@ export default class GitHubVersioner extends BaseVersioner {
     this.gitHub = new Octokit({ auth: process.env.GITHUB_TOKEN ?? undefined });
   }
 
-  public async getVersionForHead(): Promise<string> {
-    const response = await this.gitHub.rest.repos.getCommit({
-      owner: this.owner,
-      repo: this.repo,
-      ref: this.DEFAULT_BRANCH,
-    });
-    return this.getVersionForCommit(response.data.sha);
-  }
-
   async getVersionForCommit(sha: string) {
     const currentBranch = await this.getBranchForCommit(sha);
     console.error("Determined branch for commit:", currentBranch);
@@ -174,7 +165,34 @@ export default class GitHubVersioner extends BaseVersioner {
   }
 
   public async getMASBuildVersion(): Promise<string> {
-    return "TODO";
+    const zeroPad = (n: number, width: number) => {
+      return `${n}`.padStart(width, "0");
+    };
+    const currentBranch = await this.getBranchForCommit(
+      await this.getHeadSHA()
+    );
+    if (this.releaseBranchMatcher.test(currentBranch)) {
+      const version = await this.getVersionForHeadCached();
+      const parsedVersion = semver.parse(version)!;
+      // 4.26.123
+      // 426000123
+      return `${parsedVersion.major}${zeroPad(parsedVersion.minor, 2)}${zeroPad(
+        parsedVersion.patch,
+        6
+      )}`;
+    }
+    // If we aren't on a release branch we should return a buildVersion that can not be released
+    return "0";
+  }
+
+  protected async getHeadSHA(): Promise<string> {
+    const response = await this.gitHub.rest.repos.getCommit({
+      owner: this.owner,
+      repo: this.repo,
+      ref: this.DEFAULT_BRANCH,
+    });
+
+    return response.data.sha;
   }
 
   protected async getAllBranches() {
@@ -186,7 +204,7 @@ export default class GitHubVersioner extends BaseVersioner {
     return response.data.map((branch) => branch.name);
   }
 
-  private async getBranchForCommit(SHA: string) {
+  protected async getBranchForCommit(SHA: string) {
     const branches = [
       ...(await this.getReleaseBranches()).map((b) => b.branch),
       this.DEFAULT_BRANCH,

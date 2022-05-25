@@ -2,10 +2,9 @@ import semver from "semver";
 import { ReleaseBranch } from "./interfaces";
 
 export abstract class BaseVersioner {
-  abstract getVersionForHead(): Promise<string>;
-  abstract getVersionForCommit(sha: string): Promise<string>;
-  abstract getMASBuildVersion(): Promise<string>;
   protected abstract getAllBranches(): Promise<string[]>;
+  protected abstract getBranchForCommit(sha: string): Promise<string>;
+  protected abstract getHeadSHA(): Promise<string>;
 
   protected DEFAULT_BRANCH: string = "main";
   protected releaseBranchMatcher =
@@ -15,6 +14,35 @@ export abstract class BaseVersioner {
   private cachedVersion: string | null = null;
 
   constructor() {}
+
+  public async getVersionForHead() {
+    const head = await this.getHeadSHA();
+    console.error("Determined head commit:", head);
+    return await this.getVersionForCommit(head);
+  }
+
+  public abstract getVersionForCommit(sha: string): Promise<string>;
+
+  public async getMASBuildVersion() {
+    const zeroPad = (n: number, width: number) => {
+      return `${n}`.padStart(width, "0");
+    };
+    const currentBranch = await this.getBranchForCommit(
+      await this.getHeadSHA()
+    );
+    if (this.releaseBranchMatcher.test(currentBranch)) {
+      const version = await this.getVersionForHeadCached();
+      const parsedVersion = semver.parse(version)!;
+      // 4.26.123
+      // 426000123
+      return `${parsedVersion.major}${zeroPad(parsedVersion.minor, 2)}${zeroPad(
+        parsedVersion.patch,
+        6
+      )}`;
+    }
+    // If we aren't on a release branch we should return a buildVersion that can not be released
+    return "0";
+  }
 
   protected async getVersionForHeadCached() {
     if (this.cachedVersion === null) {
