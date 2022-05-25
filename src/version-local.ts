@@ -54,24 +54,6 @@ export default class LocalVersioner extends BaseVersioner {
       currentBranch === this.DEFAULT_BRANCH ||
       currentBranch === `origin/${this.DEFAULT_BRANCH}`
     ) {
-      /**
-       * If we're on master then the version === {current_major}.{next_minor}.{commits_since_branch_of_last_minor}
-       * We need to calculate next_minor though as this may be a commit between two minor releases
-       * E.g.
-       *
-       * a -> b -> c -> d -> e -> f
-       *      |              |
-       *    R4.26          R4.27
-       *
-       * Given the commit "D" on master we should consider it 4.27 even though 4.27 has already been cut
-       * because given its place in the tree it is BEFORE 4.27 was cut.  Commit order is what matters rather
-       * than whatever happens to be the latest minor at the time the build was run.
-       *
-       * In order to determine this we go through every release branch and and check "is-ancestor" for the
-       * merge-base of the release branch and master with the given commit.  The last release branch whose
-       * branch point is an ancestor of our commit should have its minor incremented and used as the version
-       * below.
-       */
       let lastReleaseBranchWithAncestor = undefined;
       for (const releaseBranch of releaseBranches) {
         let isAncestor = false;
@@ -306,33 +288,6 @@ export default class LocalVersioner extends BaseVersioner {
   }
 
   private async getNearestReleaseBranch(releaseBranches: Array<ReleaseBranch>) {
-    /**
-     * Nearest release branch calculations
-     *
-     * a -> b -> c -> d -> h -> i -> j -> l -> m
-     *           |                   |
-     *           c -> e -> f         j -> k
-     *                |
-     *                e -> g
-     *
-     * In this example "C" and "J" are branch points for release branches and the top line is the master line
-     *
-     * In this scenario D and E are both one commit away from a branch point for a release branch and therefore
-     * are quite hard to tell the difference between.  We however want to report the nearest release branch for
-     * "D" as "J" and the nearest release branch for "E" as "C"
-     *
-     * The heuristic for this is that we just need to find a release branch whos merge-base with master is
-     * the same as the merge-base of the current HEAD.  i.e. a single common ancestor exists such that it
-     * is the branch point for both this commit and a release branch
-     *
-     * For the above case "G" has a merge-base of "C" and "F" (the tip of a release branch) has a merge-base of "C"
-     * so the nearest release branch to "G" is "C->F"
-     *
-     * Importantly we don't need to worry about the case where HEAD is on master as that case never enters this code path
-     * and is handled separately.
-     */
-
-    // If we're on a random branch the version number should obviously be garbage yet also be valid, a good middle ground is {nearest_major_branch}.{nearest_minor_branch}.65536
     let nearestReleaseBranch = {
       branch: this.DEFAULT_BRANCH,
       version: semver

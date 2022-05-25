@@ -1,14 +1,24 @@
 import path from "path";
 import semver from "semver";
 import LocalVersioner from "../src/version-local";
+import GitHubVersioner from "../src/version-github";
 
-describe("Local Versioner", () => {
-  const pathToRepo = path.join(__dirname, "..", "desktop-test-fixture");
-  const v: LocalVersioner = new LocalVersioner({
-    pathToRepo: pathToRepo,
-    defaultBranch: "main",
-  });
+jest.setTimeout(30000);
 
+const lv: LocalVersioner = new LocalVersioner({
+  pathToRepo: path.join(__dirname, "..", "desktop-test-fixture"),
+  defaultBranch: "main",
+});
+
+const gv: GitHubVersioner = new GitHubVersioner({
+  owner: "erickzhao",
+  repo: "desktop-test-fixture",
+});
+
+describe.each([
+  ["Local Versioner", lv],
+  ["GitHub Versioner", gv],
+])("%s", (_, v) => {
   beforeAll(() => {
     console.error = jest.fn();
   });
