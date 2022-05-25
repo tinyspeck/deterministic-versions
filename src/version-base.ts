@@ -5,6 +5,7 @@ export abstract class BaseVersioner {
   protected abstract getAllBranches(): Promise<string[]>;
   protected abstract getBranchForCommit(sha: string): Promise<string>;
   protected abstract getHeadSHA(): Promise<string>;
+  protected abstract getMergeBase(from: string, to: string): Promise<string>;
 
   protected DEFAULT_BRANCH: string = "main";
   protected releaseBranchMatcher =
@@ -69,5 +70,32 @@ export abstract class BaseVersioner {
       .sort((a, b) => {
         return a.version.compare(b.version);
       });
+  }
+
+  protected async getNearestReleaseBranch(
+    releaseBranches: Array<ReleaseBranch>
+  ) {
+    let nearestReleaseBranch = {
+      branch: this.DEFAULT_BRANCH,
+      version: semver
+        .parse(releaseBranches[releaseBranches.length - 1].version.format())!
+        .inc("minor"),
+    };
+    for (const releaseBranch of releaseBranches) {
+      const branchPointOfReleaseBranch = await this.getMergeBase(
+        this.DEFAULT_BRANCH,
+        releaseBranch.branch
+      );
+      const branchPointOfHead = await this.getMergeBase(
+        this.DEFAULT_BRANCH,
+        "HEAD"
+      );
+      if (branchPointOfReleaseBranch === branchPointOfHead) {
+        nearestReleaseBranch = releaseBranch;
+        break;
+      }
+    }
+
+    return nearestReleaseBranch;
   }
 }

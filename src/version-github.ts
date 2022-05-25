@@ -1,7 +1,6 @@
 import { BaseVersioner } from "./version-base";
 import { Octokit } from "@octokit/rest";
 import dotenv from "dotenv";
-import { ReleaseBranch } from "./interfaces";
 import semver from "semver";
 
 dotenv.config();
@@ -241,7 +240,7 @@ export default class GitHubVersioner extends BaseVersioner {
     return possibleBranches[0];
   }
 
-  private async getMergeBase(from: string, to: string) {
+  protected async getMergeBase(from: string, to: string) {
     const res = await this.gitHub.rest.repos.compareCommitsWithBasehead({
       owner: this.owner,
       repo: this.repo,
@@ -317,31 +316,6 @@ export default class GitHubVersioner extends BaseVersioner {
     );
 
     return firstCommit.repository.ref.target.history.nodes[0].oid;
-  }
-
-  private async getNearestReleaseBranch(releaseBranches: ReleaseBranch[]) {
-    let nearestReleaseBranch = {
-      branch: this.DEFAULT_BRANCH,
-      version: semver
-        .parse(releaseBranches[releaseBranches.length - 1].version.format())!
-        .inc("minor"),
-    };
-    for (const releaseBranch of releaseBranches) {
-      const branchPointOfReleaseBranch = await this.getMergeBase(
-        `${this.DEFAULT_BRANCH}`,
-        releaseBranch.branch
-      );
-      const branchPointOfHead = await this.getMergeBase(
-        `${this.DEFAULT_BRANCH}`,
-        "HEAD"
-      );
-      if (branchPointOfReleaseBranch === branchPointOfHead) {
-        nearestReleaseBranch = releaseBranch;
-        break;
-      }
-    }
-
-    return nearestReleaseBranch;
   }
 
   private async getDistance(from: string, to: string) {

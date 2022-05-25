@@ -2,7 +2,6 @@ import * as semver from "semver";
 import { spawn } from "@malept/cross-spawn-promise";
 import path from "path";
 import fs from "fs";
-import { ReleaseBranch } from "./interfaces";
 import { BaseVersioner } from "./version-base";
 
 interface LocalVersionerOptions {
@@ -12,6 +11,7 @@ interface LocalVersionerOptions {
 
 export default class LocalVersioner extends BaseVersioner {
   private pathToRepo: string;
+  private localDefault: string;
 
   constructor(opts: LocalVersionerOptions) {
     super();
@@ -19,7 +19,8 @@ export default class LocalVersioner extends BaseVersioner {
       ? path.resolve(opts.pathToRepo)
       : process.cwd();
 
-    this.DEFAULT_BRANCH = opts.defaultBranch || "main";
+    this.localDefault = opts.defaultBranch || "main";
+    this.DEFAULT_BRANCH = `origin/${opts.defaultBranch || "main"}`;
 
     if (!fs.existsSync(this.pathToRepo)) {
       throw new Error(
@@ -46,14 +47,14 @@ export default class LocalVersioner extends BaseVersioner {
 
     if (
       currentBranch === this.DEFAULT_BRANCH ||
-      currentBranch === `origin/${this.DEFAULT_BRANCH}`
+      currentBranch === this.localDefault
     ) {
       let lastReleaseBranchWithAncestor = undefined;
       for (const releaseBranch of releaseBranches) {
         let isAncestor = false;
         const releaseBranchPoint = await this.getMergeBase(
           releaseBranch.branch,
-          `origin/${this.DEFAULT_BRANCH}`
+          this.DEFAULT_BRANCH
         );
         // If we are literally on the merge point consider it not an ancestor
         if (releaseBranchPoint === sha) {
@@ -75,7 +76,7 @@ export default class LocalVersioner extends BaseVersioner {
         );
 
         const firstCommitInLatestRelease = await this.getMergeBase(
-          `origin/${this.DEFAULT_BRANCH}`,
+          this.DEFAULT_BRANCH,
           lastReleaseBranchWithAncestor.branch
         );
         const commitsSinceLatestReleaseBranch = await this.getDistance(
@@ -222,14 +223,14 @@ export default class LocalVersioner extends BaseVersioner {
       .map((b) => b.replace(/^origin\//, ""));
     const possibleReleaseBranches = possibleBranches.filter(
       (branch) =>
-        this.releaseBranchMatcher.test(branch) || branch === this.DEFAULT_BRANCH
+        this.releaseBranchMatcher.test(branch) || branch === this.localDefault
     );
     console.error(
       `Found release branch(es) [${possibleReleaseBranches.join(", ")}].`
     );
     possibleReleaseBranches.sort((a, b) => {
-      if (a === this.DEFAULT_BRANCH) return -1;
-      if (b === this.DEFAULT_BRANCH) return 1;
+      if (a === this.localDefault) return -1;
+      if (b === this.localDefault) return 1;
       const [, aMinor] = this.releaseBranchMatcher.exec(a)!;
       const [, bMinor] = this.releaseBranchMatcher.exec(b)!;
       return parseInt(aMinor, 10) - parseInt(bMinor, 10);
@@ -242,7 +243,7 @@ export default class LocalVersioner extends BaseVersioner {
     return `origin/${possibleReleaseBranches[0]}`;
   }
 
-  private async getMergeBase(from: string, to: string) {
+  protected async getMergeBase(from: string, to: string) {
     return (await this.spawnGit(["merge-base", from, to])).slice(0, 7).trim();
   }
 
@@ -279,30 +280,5 @@ export default class LocalVersioner extends BaseVersioner {
       .trim()
       .split("\n")
       .map((s) => s.trim());
-  }
-
-  private async getNearestReleaseBranch(releaseBranches: Array<ReleaseBranch>) {
-    let nearestReleaseBranch = {
-      branch: this.DEFAULT_BRANCH,
-      version: semver
-        .parse(releaseBranches[releaseBranches.length - 1].version.format())!
-        .inc("minor"),
-    };
-    for (const releaseBranch of releaseBranches) {
-      const branchPointOfReleaseBranch = await this.getMergeBase(
-        `origin/${this.DEFAULT_BRANCH}`,
-        releaseBranch.branch
-      );
-      const branchPointOfHead = await this.getMergeBase(
-        `origin/${this.DEFAULT_BRANCH}`,
-        "HEAD"
-      );
-      if (branchPointOfReleaseBranch === branchPointOfHead) {
-        nearestReleaseBranch = releaseBranch;
-        break;
-      }
-    }
-
-    return nearestReleaseBranch;
   }
 }
