@@ -35,6 +35,8 @@ describe.each([
     ["the first minor release branch (release-1.0.x)", "b2bcb99", "1.0.2"],
     ["the default branch before any release branches", "829eb2f", "0.0.1"],
     ["the branch point for a release branch", "4507940", "4.1.6"],
+    ["commit branched from trunk", "499537a", "4.2.65535"],
+    ["commit branched from release branch", "57deab3", "4.0.65535"],
     [
       "a full length commit SHA",
       "dc328b57827d8619719f1783a21b05968652eaf3",
@@ -48,13 +50,4 @@ describe.each([
       expect(parsed?.version).toBe(expectedVersion);
     }
   );
-
-  it.each([
-    ["trunk", "499537a"],
-    ["release branch", "57deab3"],
-  ])("returns 65535 patch number for branch off of %s", async (_, sha) => {
-    const version = await v.getVersionForCommit(sha);
-    const parsed = semver.parse(version);
-    expect(parsed?.patch).toBe(0xffff);
-  });
 });

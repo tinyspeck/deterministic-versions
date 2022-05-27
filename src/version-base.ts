@@ -152,8 +152,9 @@ export abstract class BaseVersioner {
       }
     } else {
       // If we're on a random branch the version number should obviously be garbage yet also be valid, a good middle ground is {nearest_major_branch}.{nearest_minor_branch}.65535
-      const nearestReleaseBranch = await this.getNearestReleaseBranch(
-        releaseBranches
+      const nearestReleaseBranch = await this.getNearestReleaseBranchForSHA(
+        releaseBranches,
+        sha
       );
 
       console.error(
@@ -212,8 +213,9 @@ export abstract class BaseVersioner {
       });
   }
 
-  protected async getNearestReleaseBranch(
-    releaseBranches: Array<ReleaseBranch>
+  protected async getNearestReleaseBranchForSHA(
+    releaseBranches: Array<ReleaseBranch>,
+    sha: string
   ) {
     let nearestReleaseBranch = {
       branch: this.DEFAULT_BRANCH,
@@ -226,11 +228,11 @@ export abstract class BaseVersioner {
         this.DEFAULT_BRANCH,
         releaseBranch.branch
       );
-      const branchPointOfHead = await this.getMergeBase(
+      const branchPointOfSHA = await this.getMergeBase(
         this.DEFAULT_BRANCH,
-        "HEAD"
+        sha
       );
-      if (branchPointOfReleaseBranch === branchPointOfHead) {
+      if (branchPointOfReleaseBranch === branchPointOfSHA) {
         nearestReleaseBranch = releaseBranch;
         break;
       }
