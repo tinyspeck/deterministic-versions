@@ -1,6 +1,6 @@
-import { BaseVersioner } from "./version-base";
-import { Octokit } from "@octokit/rest";
-import dotenv from "dotenv";
+import { BaseVersioner } from './version-base';
+import { Octokit } from '@octokit/rest';
+import dotenv from 'dotenv';
 
 dotenv.config();
 
@@ -55,22 +55,24 @@ export default class GitHubVersioner extends BaseVersioner {
         basehead: `${branch}...${SHA}`,
       });
 
-      if (res.data.status === "behind" || res.data.status === "identical") {
+      if (res.data.status === 'behind' || res.data.status === 'identical') {
         possibleBranches.push(branch);
       }
     }
-    console.error(`Found release branch(es) [${possibleBranches.join(", ")}].`);
+    console.error(`Found release branch(es) [${possibleBranches.join(', ')}].`);
 
     possibleBranches.sort((a, b) => {
       if (a === this.DEFAULT_BRANCH) return -1;
       if (b === this.DEFAULT_BRANCH) return 1;
+      /* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */
       const [, aMinor] = this.releaseBranchMatcher.exec(a)!;
+      /* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */
       const [, bMinor] = this.releaseBranchMatcher.exec(b)!;
       return parseInt(aMinor, 10) - parseInt(bMinor, 10);
     });
     console.error(
       `Determined branch order [${possibleBranches.join(
-        ", "
+        ', '
       )}]. Using first one.`
     );
 
@@ -94,13 +96,14 @@ export default class GitHubVersioner extends BaseVersioner {
       basehead: `${from}...${to}`,
     });
 
-    return res.data.status === "ahead";
+    return res.data.status === 'ahead';
   }
 
   protected async getFirstCommit() {
     // No direct API for this. To do this in constant time, there's a workaround
     // involving some GraphQL-only APIs.
     // See https://stackoverflow.com/a/62336529/5602134 for information
+    /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
     const lastCommit: any = await this.gitHub.graphql(
       `{
         repository(name: "${this.repo}", owner: "${this.owner}") {
@@ -123,9 +126,10 @@ export default class GitHubVersioner extends BaseVersioner {
 
     const numCommits = lastCommit.repository.ref.target.history.totalCount;
     const lastCommitSHA =
-      lastCommit.repository.ref.target.history.pageInfo.endCursor.split(" ")[0];
+      lastCommit.repository.ref.target.history.pageInfo.endCursor.split(' ')[0];
     const magicIncantation = `${lastCommitSHA} ${numCommits - 2}`;
 
+    /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
     const firstCommit: any = await this.gitHub.graphql(
       `{
         repository(name: "${this.repo}", owner: "${this.owner}") {

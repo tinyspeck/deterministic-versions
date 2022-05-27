@@ -26,19 +26,19 @@ The output from `git log --all --decorate --oneline --graph` is:
 | | | * 7842465 fix: important security backport
 | | | | * ece1c3f (origin/release-4.1.x, release-4.1.x) fix: important security backport
 | | | | * c95b710 fix: 4.1.x-only fix
-| | | |/  
+| | | |/
 | | | * 4507940 chore: main branch commit!
 | | | * f518e9b feat: another new feature
 | | | * a8e1d1a fix: backportable fix! (will go into 4.0.x)
 | | | * e30b8b5 feat: another new feature (no bp)!!
 | | | * cd5a085 feat: a new feature wow!! (not backported)
 | | | * da7c537 fix: fix i need to backport
-| | |/  
+| | |/
 | | * 9e1e2e6 docs: add initial API documentation
-| |/  
+| |/
 | * 3a159f0 fix: plug security leak
 | * c26d9ba feat: add cross-platform functionality
-|/  
+|/
 * 829eb2f feat: initial feature work
 * eba3360 Initial commit
 ```
@@ -47,12 +47,12 @@ The output from `git log --all --decorate --oneline --graph` is:
 
 See `index.test.ts` for the full details of the test cases.
 
-* Any commit residing on the default branch or any release branch should
-  have a valid major.minor.patch version number assigned to it. 
-* Any commit not fitting the above criteria should have patch version `0xffff`.
+- Any commit residing on the default branch or any release branch should
+  have a valid major.minor.patch version number assigned to it.
+- Any commit not fitting the above criteria should have patch version `0xffff`.
 
 | Case                                | SHA     | Version   |
-|-------------------------------------|---------|-----------|
+| ----------------------------------- | ------- | --------- |
 | Tip of release branch               | ece1c3f | 4.1.8     |
 | Commit on release branch            | c95b710 | 4.1.7     |
 | Older release branch                | 21c5383 | 3.2.3     |

@@ -1,4 +1,4 @@
-import { SemVer } from "semver";
+import { SemVer } from 'semver';
 
 export interface ReleaseBranch {
   branch: string;

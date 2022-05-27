@@ -1,5 +1,5 @@
-import semver from "semver";
-import { ReleaseBranch } from "./interfaces";
+import semver from 'semver';
+import { ReleaseBranch } from './interfaces';
 
 export abstract class BaseVersioner {
   protected abstract getAllBranches(): Promise<string[]>;
@@ -10,29 +10,28 @@ export abstract class BaseVersioner {
   protected abstract getMergeBase(from: string, to: string): Promise<string>;
   protected abstract isAncestor(from: string, to: string): Promise<boolean>;
 
-  protected DEFAULT_BRANCH: string = "main";
+  protected DEFAULT_BRANCH = 'main';
   protected releaseBranchMatcher =
     /^(?:origin\/)?release-([0-9]+)\.([0-9]+)\.x$/;
+
   protected UNSAFE_BRANCH_PATCH = 65535; // This is the highest possible build number for an appx build
 
   private cachedVersion: string | null = null;
 
-  constructor() {}
-
   public async getVersionForHead() {
     const head = await this.getHeadSHA();
-    console.error("Determined head commit:", head);
+    console.error('Determined head commit:', head);
     return await this.getVersionForCommit(head);
   }
 
   public async getVersionForCommit(sha: string) {
     const currentBranch = await this.getBranchForCommit(sha);
-    console.error("Determined branch for commit:", currentBranch);
+    console.error('Determined branch for commit:', currentBranch);
 
     const releaseBranches = await this.getReleaseBranches();
 
     if (currentBranch === this.DEFAULT_BRANCH) {
-      let lastReleaseBranchWithAncestor = undefined;
+      let lastReleaseBranchWithAncestor;
       for (const releaseBranch of releaseBranches) {
         let isAncestor = false;
         const releaseBranchPoint = await this.getMergeBase(
@@ -82,18 +81,18 @@ export abstract class BaseVersioner {
     } else if (this.releaseBranchMatcher.test(currentBranch)) {
       // If we're on a release branch then the version === {current_major}.{current_minor}.{commits_since_branch_of_minor + commits_on_master_between_last_branch_and_this_branch}
       const releaseBranchIndex = releaseBranches.findIndex(
-        (branch) => branch.branch === currentBranch.replace(/^origin\//, "")
+        (branch) => branch.branch === currentBranch.replace(/^origin\//, '')
       );
       const releaseBranch = releaseBranches[releaseBranchIndex];
 
       if (!releaseBranch) {
         throw new Error(
-          "Failed to find remote branch for current release branch, ensure it is pushed to the remote"
+          'Failed to find remote branch for current release branch, ensure it is pushed to the remote'
         );
       }
 
       console.error(
-        "On an active release branch so the version is considered to be the current minor",
+        'On an active release branch so the version is considered to be the current minor',
         `${releaseBranch.version.major}.${releaseBranch.version.minor}`
       );
 
@@ -109,7 +108,7 @@ export abstract class BaseVersioner {
       } else {
         const previousReleaseBranch = releaseBranches[releaseBranchIndex - 1];
         console.error(
-          "Determined previous release branch to be:",
+          'Determined previous release branch to be:',
           previousReleaseBranch.branch
         );
 
@@ -126,11 +125,11 @@ export abstract class BaseVersioner {
           firstCommitInCurrentRelease
         );
         console.error(
-          "Calculated that there were",
+          'Calculated that there were',
           commitsOnDefaultBranchBetweenReleases,
-          "commits on the",
+          'commits on the',
           this.DEFAULT_BRANCH,
-          "branch between the previous release and this release"
+          'branch between the previous release and this release'
         );
 
         const commitsInCurrentRelease = await this.getDistance(
@@ -138,11 +137,11 @@ export abstract class BaseVersioner {
           sha
         );
         console.error(
-          "Calculated that there are",
+          'Calculated that there are',
           commitsInCurrentRelease,
-          "commits on the",
+          'commits on the',
           currentBranch,
-          "branch since its inception till",
+          'branch since its inception till',
           sha
         );
 
@@ -158,7 +157,7 @@ export abstract class BaseVersioner {
       );
 
       console.error(
-        "On a non-release branch, determined the nearest release branch is:",
+        'On a non-release branch, determined the nearest release branch is:',
         nearestReleaseBranch.branch
       );
       return `${nearestReleaseBranch.version.major}.${nearestReleaseBranch.version.minor}.${this.UNSAFE_BRANCH_PATCH}`;
@@ -167,13 +166,14 @@ export abstract class BaseVersioner {
 
   public async getMASBuildVersion() {
     const zeroPad = (n: number, width: number) => {
-      return `${n}`.padStart(width, "0");
+      return `${n}`.padStart(width, '0');
     };
     const currentBranch = await this.getBranchForCommit(
       await this.getHeadSHA()
     );
     if (this.releaseBranchMatcher.test(currentBranch)) {
       const version = await this.getVersionForHeadCached();
+      /* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */
       const parsedVersion = semver.parse(version)!;
       // 4.26.123
       // 426000123
@@ -183,7 +183,7 @@ export abstract class BaseVersioner {
       )}`;
     }
     // If we aren't on a release branch we should return a buildVersion that can not be released
-    return "0";
+    return '0';
   }
 
   protected async getVersionForHeadCached() {
@@ -197,7 +197,7 @@ export abstract class BaseVersioner {
     const allBranches = await this.getAllBranches();
     const releaseBranchNames = allBranches
       .map((branch) =>
-        this.releaseBranchMatcher.exec(branch.replace(/^origin\//, ""))
+        this.releaseBranchMatcher.exec(branch.replace(/^origin\//, ''))
       )
       .filter((branch) => branch !== null) as RegExpExecArray[];
 
@@ -205,6 +205,7 @@ export abstract class BaseVersioner {
       .map(([branchName, major, minor]) => {
         return {
           branch: branchName,
+          /* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */
           version: semver.parse(`${major}.${minor}.0`)!,
         };
       })
@@ -219,9 +220,10 @@ export abstract class BaseVersioner {
   ) {
     let nearestReleaseBranch = {
       branch: this.DEFAULT_BRANCH,
+      /* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */
       version: semver
         .parse(releaseBranches[releaseBranches.length - 1].version.format())!
-        .inc("minor"),
+        .inc('minor'),
     };
     for (const releaseBranch of releaseBranches) {
       const branchPointOfReleaseBranch = await this.getMergeBase(

@@ -1,7 +1,7 @@
-import { spawn } from "@malept/cross-spawn-promise";
-import path from "path";
-import fs from "fs";
-import { BaseVersioner } from "./version-base";
+import { spawn } from '@malept/cross-spawn-promise';
+import path from 'path';
+import fs from 'fs';
+import { BaseVersioner } from './version-base';
 
 interface LocalVersionerOptions {
   pathToRepo?: string;
@@ -17,7 +17,7 @@ export default class LocalVersioner extends BaseVersioner {
       ? path.resolve(opts.pathToRepo)
       : process.cwd();
 
-    this.DEFAULT_BRANCH = opts.defaultBranch || "main";
+    this.DEFAULT_BRANCH = opts.defaultBranch || 'main';
 
     if (!fs.existsSync(this.pathToRepo)) {
       throw new Error(
@@ -33,39 +33,41 @@ export default class LocalVersioner extends BaseVersioner {
    * @returns Promise<string>
    */
   private async spawnGit(command: string[]) {
-    return spawn("git", command, { cwd: this.pathToRepo });
+    return spawn('git', command, { cwd: this.pathToRepo });
   }
 
   protected async getHeadSHA() {
-    return (await this.spawnGit(["rev-parse", "HEAD"])).trim();
+    return (await this.spawnGit(['rev-parse', 'HEAD'])).trim();
   }
 
   protected async getBranchForCommit(SHA: string) {
     const possibleBranches = (
-      await this.spawnGit(["branch", "--contains", SHA, "--remote"])
+      await this.spawnGit(['branch', '--contains', SHA, '--remote'])
     )
       .trim()
-      .split("\n")
+      .split('\n')
       .map((b) => b.trim())
-      .filter((b) => !b.includes(" -> "))
-      .map((b) => b.replace(/^origin\//, ""));
+      .filter((b) => !b.includes(' -> '))
+      .map((b) => b.replace(/^origin\//, ''));
     const possibleReleaseBranches = possibleBranches.filter(
       (branch) =>
         this.releaseBranchMatcher.test(branch) || branch === this.DEFAULT_BRANCH
     );
     console.error(
-      `Found release branch(es) [${possibleReleaseBranches.join(", ")}].`
+      `Found release branch(es) [${possibleReleaseBranches.join(', ')}].`
     );
     possibleReleaseBranches.sort((a, b) => {
       if (a === this.DEFAULT_BRANCH) return -1;
       if (b === this.DEFAULT_BRANCH) return 1;
+      /* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */
       const [, aMinor] = this.releaseBranchMatcher.exec(a)!;
+      /* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */
       const [, bMinor] = this.releaseBranchMatcher.exec(b)!;
       return parseInt(aMinor, 10) - parseInt(bMinor, 10);
     });
     console.error(
       `Determined branch order [${possibleReleaseBranches.join(
-        ", "
+        ', '
       )}]. Using first one.`
     );
     return possibleReleaseBranches[0];
@@ -79,13 +81,13 @@ export default class LocalVersioner extends BaseVersioner {
     const fixedFrom = from === this.DEFAULT_BRANCH ? `origin/${from}` : from;
     const fixedTo = to === this.DEFAULT_BRANCH ? `origin/${to}` : to;
 
-    return (await this.spawnGit(["merge-base", fixedFrom, fixedTo]))
+    return (await this.spawnGit(['merge-base', fixedFrom, fixedTo]))
       .slice(0, 7)
       .trim();
   }
 
   protected async getFirstCommit() {
-    return (await this.spawnGit(["rev-list", "--max-parents=0", "HEAD"]))
+    return (await this.spawnGit(['rev-list', '--max-parents=0', 'HEAD']))
       .slice(0, 7)
       .trim();
   }
@@ -98,7 +100,7 @@ export default class LocalVersioner extends BaseVersioner {
      * Errors are signaled by a non-zero status that is not 1.
      */
     try {
-      await this.spawnGit(["merge-base", "--is-ancestor", from, to]);
+      await this.spawnGit(['merge-base', '--is-ancestor', from, to]);
       return true;
     } catch {
       return false;
@@ -107,15 +109,15 @@ export default class LocalVersioner extends BaseVersioner {
 
   protected async getDistance(from: string, to: string) {
     return parseInt(
-      (await this.spawnGit(["rev-list", "--count", `${from}..${to}`])).trim(),
+      (await this.spawnGit(['rev-list', '--count', `${from}..${to}`])).trim(),
       10
     );
   }
 
   protected async getAllBranches(): Promise<string[]> {
-    return (await this.spawnGit(["branch", "-r"]))
+    return (await this.spawnGit(['branch', '-r']))
       .trim()
-      .split("\n")
+      .split('\n')
       .map((s) => s.trim());
   }
 }
