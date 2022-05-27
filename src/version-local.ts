@@ -24,9 +24,6 @@ export default class LocalVersioner extends BaseVersioner {
         `Attempted to use path ${this.pathToRepo} but doesn't exist!`
       );
     }
-
-    this.spawnGit(['fetch', '--all'])
-    this.spawnGit(['pull', '--all'])
   }
 
   /**
@@ -75,7 +72,16 @@ export default class LocalVersioner extends BaseVersioner {
   }
 
   protected async getMergeBase(from: string, to: string) {
-    return (await this.spawnGit(["merge-base", from, to])).slice(0, 7).trim();
+    // If we're referring to the main branch, we want to get the
+    // upstream tip-of-tree rather than the local checkout.
+    // For example, this matters if we're on a detached HEAD
+    // on the main branch.
+    const fixedFrom = from === this.DEFAULT_BRANCH ? `origin/${from}` : from;
+    const fixedTo = to === this.DEFAULT_BRANCH ? `origin/${to}` : to;
+
+    return (await this.spawnGit(["merge-base", fixedFrom, fixedTo]))
+      .slice(0, 7)
+      .trim();
   }
 
   protected async getFirstCommit() {
