@@ -7,7 +7,7 @@
   "author": "Erick Zhao <erick@hotmail.ca>",
   "license": "MIT",
   "scripts": {
-    "start": "ts-node --transpile-only index.ts",
+    "build": "tsc",
     "lint": "eslint . --fix && prettier . --write",
     "test": "jest"
   },
