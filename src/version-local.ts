@@ -78,8 +78,16 @@ export default class LocalVersioner extends BaseVersioner {
     // upstream tip-of-tree rather than the local checkout.
     // For example, this matters if we're on a detached HEAD
     // on the main branch.
-    const fixedFrom = from === this.DEFAULT_BRANCH ? `origin/${from}` : from;
-    const fixedTo = to === this.DEFAULT_BRANCH ? `origin/${to}` : to;
+    const fixedFrom =
+      (from === this.DEFAULT_BRANCH || this.releaseBranchMatcher.test(from)) &&
+      !from.startsWith('origin/')
+        ? `origin/${from}`
+        : from;
+    const fixedTo =
+      (to === this.DEFAULT_BRANCH || this.releaseBranchMatcher.test(to)) &&
+      !to.startsWith('origin/')
+        ? `origin/${to}`
+        : to;
 
     return (await this.spawnGit(['merge-base', fixedFrom, fixedTo]))
       .slice(0, 7)
