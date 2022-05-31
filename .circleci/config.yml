@@ -1,0 +1,25 @@
+version: 2.1
+orbs:
+  node: circleci/node@5.0.2
+
+jobs:
+  build_and_test: # this can be any name you choose
+    executor: node/default # use the default executor defined within the orb
+    steps:
+      - checkout
+      - run:
+          command: git submodule update --init --recursive
+          name: Install submodules
+      - node/install-packages:
+          pkg-manager: yarn
+      - run:
+          command: yarn test
+          name: Run tests
+      - run:
+          command: yarn build
+          name: Build package
+
+workflows:
+  test:
+    jobs:
+      - build_and_test
