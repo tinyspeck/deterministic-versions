@@ -50,4 +50,14 @@ describe.each([
       expect(parsed?.version).toBe(expectedVersion);
     }
   );
+
+  it('generates the correct MAS build version number for HEAD', async () => {
+    const res = await v.getMASBuildVersionForHEAD();
+    expect(res).toBe('0');
+  });
+
+  it('generates the correct MAS build version number for commit', async () => {
+    const res = await v.getMASBuildVersionForCommit('ece1c3f');
+    expect(res).toBe('401000008');
+  });
 });

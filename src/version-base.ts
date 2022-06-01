@@ -203,18 +203,26 @@ export abstract class BaseVersioner {
   }
 
   /**
-   * Generates a MAS build version number for the target commit.
-   * @returns 
+   * Generates a MAS build version number for the HEAD commit.
+   * Only generates non-zero numbers for
+   * @returns a build version number
    */
-  public async getMASBuildVersion() {
+  public async getMASBuildVersionForHEAD() {
+    const head = await this.getHeadSHA();
+    return this.getMASBuildVersionForCommit(head);
+  }
+
+  /**
+   * Generates a MAS build version number for the target commit.
+   * @returns a build version number
+   */
+  public async getMASBuildVersionForCommit(sha: string) {
     const zeroPad = (n: number, width: number) => {
       return `${n}`.padStart(width, '0');
     };
-    const currentBranch = await this.getBranchForCommit(
-      await this.getHeadSHA()
-    );
+    const currentBranch = await this.getBranchForCommit(sha);
     if (this.releaseBranchMatcher.test(currentBranch)) {
-      const version = await this.getVersionForHeadCached();
+      const version = await this.getVersionForCommit(sha);
       /* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */
       const parsedVersion = semver.parse(version)!;
       // 4.26.123
@@ -264,7 +272,7 @@ export abstract class BaseVersioner {
    * Fetches the nearest release branch for a specific commit.
    * This distance is determined by finding the most recent
    * release branch with a common merge-base to the commit.
-   * 
+   *
    * @param releaseBranches Array of release branch names
    * @param sha SHA-1 hash of the target commit
    * @returns The release branch nearest to the target commit.
