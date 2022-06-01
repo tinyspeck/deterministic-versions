@@ -2,12 +2,41 @@ import semver from 'semver';
 import { ReleaseBranch } from './interfaces';
 
 export abstract class BaseVersioner {
+  /**
+   * Fetches all branch names for the repository
+   */
   protected abstract getAllBranches(): Promise<string[]>;
+  /**
+   * Fetches the branch name for a given commit
+   * @param sha SHA-1 hash for the target commit
+   */
   protected abstract getBranchForCommit(sha: string): Promise<string>;
+  /**
+   * Calculates the commit distance between two commits.
+   * @param from SHA-1 hash for the first commit
+   * @param to SHA-1 hash for the second commit
+   */
   protected abstract getDistance(from: string, to: string): Promise<number>;
+  /**
+   * Retrieves the SHA-1 hash for the oldest commit in the repository.
+   */
   protected abstract getFirstCommit(): Promise<string>;
+  /**
+   * Gets the SHA-1 hash for the current HEAD commit.
+   */
   protected abstract getHeadSHA(): Promise<string>;
+  /**
+   * Fetches the SHA-1 hash for the merge-base of two commits
+   * @param from SHA-1 hash for the first commit
+   * @param to SHA-1 hash for the second commit
+   */
   protected abstract getMergeBase(from: string, to: string): Promise<string>;
+  /**
+   * Determines if the `from` commit is an ancestor of the `to` commit
+   * in the git history.
+   * @param from SHA-1 hash for the potential ancestor commit
+   * @param to SHA-1 hash for the potential descendant commit
+   */
   protected abstract isAncestor(from: string, to: string): Promise<boolean>;
 
   protected DEFAULT_BRANCH = 'main';
@@ -18,12 +47,21 @@ export abstract class BaseVersioner {
 
   private cachedVersion: string | null = null;
 
+  /**
+   * Fetches the build number for the HEAD of the current branch
+   * @returns version number (major.minor.build)
+   */
   public async getVersionForHead() {
     const head = await this.getHeadSHA();
     console.error('Determined head commit:', head);
     return await this.getVersionForCommit(head);
   }
 
+  /**
+   * Fetches the build number for a specific commit
+   * @param sha SHA-1 hash for the target commit
+   * @returns version number (major.minor.build)
+   */
   public async getVersionForCommit(sha: string) {
     const currentBranch = await this.getBranchForCommit(sha);
     console.error('Determined branch for commit:', currentBranch);
@@ -164,6 +202,10 @@ export abstract class BaseVersioner {
     }
   }
 
+  /**
+   * Generates a MAS build version number for the target commit.
+   * @returns 
+   */
   public async getMASBuildVersion() {
     const zeroPad = (n: number, width: number) => {
       return `${n}`.padStart(width, '0');
@@ -193,6 +235,10 @@ export abstract class BaseVersioner {
     return this.cachedVersion;
   }
 
+  /**
+   * Gets all release branches matching the target pattern
+   * @returns Array of release branch names
+   */
   protected async getReleaseBranches(): Promise<ReleaseBranch[]> {
     const allBranches = await this.getAllBranches();
     const releaseBranchNames = allBranches
@@ -214,6 +260,15 @@ export abstract class BaseVersioner {
       });
   }
 
+  /**
+   * Fetches the nearest release branch for a specific commit.
+   * This distance is determined by finding the most recent
+   * release branch with a common merge-base to the commit.
+   * 
+   * @param releaseBranches Array of release branch names
+   * @param sha SHA-1 hash of the target commit
+   * @returns The release branch nearest to the target commit.
+   */
   protected async getNearestReleaseBranchForSHA(
     releaseBranches: Array<ReleaseBranch>,
     sha: string
