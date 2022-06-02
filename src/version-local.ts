@@ -49,10 +49,22 @@ export default class LocalVersioner extends BaseVersioner {
       .map((b) => b.trim())
       .filter((b) => !b.includes(' -> '))
       .map((b) => b.replace(/^origin\//, ''));
+
     const possibleReleaseBranches = possibleBranches.filter(
       (branch) =>
         this.releaseBranchMatcher.test(branch) || branch === this.DEFAULT_BRANCH
     );
+
+    // If we're searching for the current HEAD, prioritize the current
+    // branch over other branches with the same commit.
+    const currentBranch = (
+      await this.spawnGit(['rev-parse', '--abbrev-ref', 'HEAD'])
+    ).trim();
+
+    if (possibleBranches.includes(currentBranch)) {
+      return currentBranch;
+    }
+
     console.error(
       `Found release branch(es) [${possibleReleaseBranches.join(', ')}].`
     );
