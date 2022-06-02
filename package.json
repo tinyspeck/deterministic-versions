@@ -2,15 +2,20 @@
   "name": "deterministic-versions",
   "version": "0.1.0",
   "description": "deterministic git-based versioning for applications",
-  "main": "index.js",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
   "repository": "git@github.com:tinyspeck/deterministic-versions.git",
   "author": "Erick Zhao <erick@hotmail.ca>",
   "license": "MIT",
   "scripts": {
     "build": "tsc",
     "lint": "eslint . --fix && prettier . --write",
+    "prepublish": "npm run build",
     "test": "jest"
   },
+  "files": [
+    "lib"
+  ],
   "devDependencies": {
     "@types/jest": "^27.5.0",
     "@types/node": "^17.0.31",
