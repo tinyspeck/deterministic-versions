@@ -236,7 +236,7 @@ export abstract class BaseVersioner {
     return '0';
   }
 
-  protected async getVersionForHeadCached() {
+  public async getVersionForHeadCached() {
     if (this.cachedVersion === null) {
       this.cachedVersion = await this.getVersionForHead();
     }
