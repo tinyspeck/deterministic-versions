@@ -1,6 +1,6 @@
 {
   "name": "deterministic-versions",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "deterministic git-based versioning for applications",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
