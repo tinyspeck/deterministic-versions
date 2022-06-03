@@ -1,5 +1,5 @@
 import path from 'path';
-import semver from 'semver';
+import * as semver from 'semver';
 import LocalVersioner from '../src/version-local';
 import GitHubVersioner from '../src/version-github';
 
