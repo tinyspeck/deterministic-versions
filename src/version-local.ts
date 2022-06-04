@@ -61,7 +61,12 @@ export default class LocalVersioner extends BaseVersioner {
       await this.spawnGit(['rev-parse', '--abbrev-ref', 'HEAD'])
     ).trim();
 
-    if (possibleBranches.includes(currentBranch)) {
+    const head = await this.getHeadSHA();
+
+    if (
+      head.slice(0, 7) === SHA.slice(0, 7) &&
+      possibleBranches.includes(currentBranch)
+    ) {
       return currentBranch;
     }
 
