@@ -77,7 +77,7 @@ export abstract class BaseVersioner {
           this.DEFAULT_BRANCH
         );
         // If we are literally on the merge point consider it not an ancestor
-        if (releaseBranchPoint === sha) {
+        if (releaseBranchPoint === sha.substring(0, 7)) {
           isAncestor = false;
         } else {
           isAncestor = await this.isAncestor(releaseBranchPoint, sha);
