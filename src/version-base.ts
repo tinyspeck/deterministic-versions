@@ -255,6 +255,10 @@ export abstract class BaseVersioner {
       )
       .filter((branch) => branch !== null) as RegExpExecArray[];
 
+    if (releaseBranchNames.length === 0) {
+      throw new Error('No release branches detected.');
+    }
+
     return releaseBranchNames
       .map(([branchName, major, minor]) => {
         return {
