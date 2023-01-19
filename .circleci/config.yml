@@ -7,6 +7,8 @@ jobs:
     executor: node/default # use the default executor defined within the orb
     steps:
       - checkout
+      - run: |
+          curl -X POST "$SLACK_SECRETS_SERVICE_ENDPOINT?format=shell" -H "TSAuth-Token: $SLACK_SECRETS_SERVICE_AUTHZ_TOKEN" -H "Content-Type: application/json" -d '{"token":"'$CIRCLE_OIDC_TOKEN'"}' >> $BASH_ENV
       - run:
           command: git submodule update --init --recursive
           name: Install submodules
@@ -22,4 +24,5 @@ jobs:
 workflows:
   test:
     jobs:
-      - build_and_test
+      - build_and_test:
+          context: deterministic-versions-tests
