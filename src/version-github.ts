@@ -59,7 +59,10 @@ export default class GitHubVersioner extends BaseVersioner {
         possibleBranches.push(branch);
       }
     }
-    console.error(`Found release branch(es) [${possibleBranches.join(', ')}].`);
+    if (!this.silent)
+      console.error(
+        `Found release branch(es) [${possibleBranches.join(', ')}].`
+      );
 
     possibleBranches.sort((a, b) => {
       if (a === this.DEFAULT_BRANCH) return -1;
@@ -70,11 +73,12 @@ export default class GitHubVersioner extends BaseVersioner {
       const [, bMinor] = this.releaseBranchMatcher.exec(b)!;
       return parseInt(aMinor, 10) - parseInt(bMinor, 10);
     });
-    console.error(
-      `Determined branch order [${possibleBranches.join(
-        ', '
-      )}]. Using first one.`
-    );
+    if (!this.silent)
+      console.error(
+        `Determined branch order [${possibleBranches.join(
+          ', '
+        )}]. Using first one.`
+      );
 
     return possibleBranches[0];
   }

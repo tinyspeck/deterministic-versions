@@ -70,9 +70,10 @@ export default class LocalVersioner extends BaseVersioner {
       return currentBranch;
     }
 
-    console.error(
-      `Found release branch(es) [${possibleReleaseBranches.join(', ')}].`
-    );
+    if (!this.silent)
+      console.error(
+        `Found release branch(es) [${possibleReleaseBranches.join(', ')}].`
+      );
     possibleReleaseBranches.sort((a, b) => {
       if (a === this.DEFAULT_BRANCH) return -1;
       if (b === this.DEFAULT_BRANCH) return 1;
@@ -82,11 +83,12 @@ export default class LocalVersioner extends BaseVersioner {
       const [, bMinor] = this.releaseBranchMatcher.exec(b)!;
       return parseInt(aMinor, 10) - parseInt(bMinor, 10);
     });
-    console.error(
-      `Determined branch order [${possibleReleaseBranches.join(
-        ', '
-      )}]. Using first one.`
-    );
+    if (!this.silent)
+      console.error(
+        `Determined branch order [${possibleReleaseBranches.join(
+          ', '
+        )}]. Using first one.`
+      );
     return possibleReleaseBranches[0];
   }
 
