@@ -47,13 +47,15 @@ export abstract class BaseVersioner {
 
   private cachedVersion: string | null = null;
 
+  public silent = false;
+
   /**
    * Fetches the build number for the HEAD of the current branch
    * @returns version number (major.minor.build)
    */
   public async getVersionForHead() {
     const head = await this.getHeadSHA();
-    console.error('Determined head commit:', head);
+    if (!this.silent) console.error('Determined head commit:', head);
     return await this.getVersionForCommit(head);
   }
 
@@ -64,7 +66,8 @@ export abstract class BaseVersioner {
    */
   public async getVersionForCommit(sha: string) {
     const currentBranch = await this.getBranchForCommit(sha);
-    console.error('Determined branch for commit:', currentBranch);
+    if (!this.silent)
+      console.error('Determined branch for commit:', currentBranch);
 
     const releaseBranches = await this.getReleaseBranches();
 
@@ -90,10 +93,11 @@ export abstract class BaseVersioner {
         const targetMajor = lastReleaseBranchWithAncestor.version.major;
         const targetMinor = lastReleaseBranchWithAncestor.version.minor + 1;
 
-        console.error(
-          `On ${this.DEFAULT_BRANCH} so the version is considered to be the next unreleased minor`,
-          `${targetMajor}.${targetMinor}`
-        );
+        if (!this.silent)
+          console.error(
+            `On ${this.DEFAULT_BRANCH} so the version is considered to be the next unreleased minor`,
+            `${targetMajor}.${targetMinor}`
+          );
 
         const firstCommitInLatestRelease = await this.getMergeBase(
           this.DEFAULT_BRANCH,
@@ -103,9 +107,10 @@ export abstract class BaseVersioner {
           firstCommitInLatestRelease,
           sha
         );
-        console.error(
-          `${commitsSinceLatestReleaseBranch} commits on ${this.DEFAULT_BRANCH} since the last minor was branched`
-        );
+        if (!this.silent)
+          console.error(
+            `${commitsSinceLatestReleaseBranch} commits on ${this.DEFAULT_BRANCH} since the last minor was branched`
+          );
 
         return `${targetMajor}.${targetMinor}.${commitsSinceLatestReleaseBranch}`;
       } else {
@@ -129,10 +134,11 @@ export abstract class BaseVersioner {
         );
       }
 
-      console.error(
-        'On an active release branch so the version is considered to be the current minor',
-        `${releaseBranch.version.major}.${releaseBranch.version.minor}`
-      );
+      if (!this.silent)
+        console.error(
+          'On an active release branch so the version is considered to be the current minor',
+          `${releaseBranch.version.major}.${releaseBranch.version.minor}`
+        );
 
       // If we're on the first-ever release branch, we count versions from the dawn of time
       if (releaseBranchIndex === 0) {
@@ -145,10 +151,11 @@ export abstract class BaseVersioner {
         return `${releaseBranch.version.major}.${releaseBranch.version.minor}.${commitsSinceInitialCommit}`;
       } else {
         const previousReleaseBranch = releaseBranches[releaseBranchIndex - 1];
-        console.error(
-          'Determined previous release branch to be:',
-          previousReleaseBranch.branch
-        );
+        if (!this.silent)
+          console.error(
+            'Determined previous release branch to be:',
+            previousReleaseBranch.branch
+          );
 
         const firstCommitInPreviousRelease = await this.getMergeBase(
           this.DEFAULT_BRANCH,
@@ -162,26 +169,28 @@ export abstract class BaseVersioner {
           firstCommitInPreviousRelease,
           firstCommitInCurrentRelease
         );
-        console.error(
-          'Calculated that there were',
-          commitsOnDefaultBranchBetweenReleases,
-          'commits on the',
-          this.DEFAULT_BRANCH,
-          'branch between the previous release and this release'
-        );
+        if (!this.silent)
+          console.error(
+            'Calculated that there were',
+            commitsOnDefaultBranchBetweenReleases,
+            'commits on the',
+            this.DEFAULT_BRANCH,
+            'branch between the previous release and this release'
+          );
 
         const commitsInCurrentRelease = await this.getDistance(
           firstCommitInCurrentRelease,
           sha
         );
-        console.error(
-          'Calculated that there are',
-          commitsInCurrentRelease,
-          'commits on the',
-          currentBranch,
-          'branch since its inception till',
-          sha
-        );
+        if (!this.silent)
+          console.error(
+            'Calculated that there are',
+            commitsInCurrentRelease,
+            'commits on the',
+            currentBranch,
+            'branch since its inception till',
+            sha
+          );
 
         return `${releaseBranch.version.major}.${releaseBranch.version.minor}.${
           commitsInCurrentRelease + commitsOnDefaultBranchBetweenReleases
@@ -194,10 +203,11 @@ export abstract class BaseVersioner {
         sha
       );
 
-      console.error(
-        'On a non-release branch, determined the nearest release branch is:',
-        nearestReleaseBranch.branch
-      );
+      if (!this.silent)
+        console.error(
+          'On a non-release branch, determined the nearest release branch is:',
+          nearestReleaseBranch.branch
+        );
       return `${nearestReleaseBranch.version.major}.${nearestReleaseBranch.version.minor}.${this.UNSAFE_BRANCH_PATCH}`;
     }
   }
