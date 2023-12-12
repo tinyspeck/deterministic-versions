@@ -1,6 +1,7 @@
 # Desktop Development Deterministic Denomination
 
 [![CircleCI](https://circleci.com/gh/tinyspeck/deterministic-versions.svg?style=shield)](https://circleci.com/gh/tinyspeck/deterministic-versions)
+![npm](https://img.shields.io/npm/v/deterministic-versions)
 
 This package provides an algorithm that deterministically generates a `major.minor.build`
 versioning system for desktop applications given the git history of the repository.
