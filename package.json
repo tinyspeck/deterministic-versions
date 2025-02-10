@@ -1,6 +1,6 @@
 {
   "name": "deterministic-versions",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "deterministic git-based versioning for applications",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
@@ -10,7 +10,10 @@
   "engines": {
     "node": ">=22"
   },
-  "repository": "git@github.com:tinyspeck/deterministic-versions.git",
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/tinyspeck/deterministic-versions.git"
+  },
   "author": "Erick Zhao <erick@hotmail.ca>",
   "license": "MIT",
   "scripts": {
