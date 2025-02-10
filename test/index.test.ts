@@ -35,9 +35,21 @@ describe.each([
     ['the first minor release branch (release-1.0.x)', 'b2bcb99', '1.0.2'],
     ['the default branch before any release branches', '829eb2f', '0.0.1'],
     ['the branch point for a release branch', '4507940', '4.1.6'],
-    ['the branch point for a release branch with a full SHA', '45079400b565b91a146a1699d50da9d2d4170a33', '4.1.6'],
-    ['the commit after the branch point for a release branch on a release branch', 'c95b710', '4.1.7'],
-    ['the commit after the branch point for a release branch on the mainline branch', '7842465', '4.2.1'],
+    [
+      'the branch point for a release branch with a full SHA',
+      '45079400b565b91a146a1699d50da9d2d4170a33',
+      '4.1.6',
+    ],
+    [
+      'the commit after the branch point for a release branch on a release branch',
+      'c95b710',
+      '4.1.7',
+    ],
+    [
+      'the commit after the branch point for a release branch on the mainline branch',
+      '7842465',
+      '4.2.1',
+    ],
     ['commit branched from trunk', '499537a', '4.2.65535'],
     ['commit branched from release branch', '57deab3', '4.0.65535'],
     [

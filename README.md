@@ -6,6 +6,26 @@
 This package provides an algorithm that deterministically generates a `major.minor.build`
 versioning system for desktop applications given the git history of the repository.
 
+## Progammatic usage
+
+TODO
+
+## CLI usage
+
+```
+Usage: deterministic-versions [options]
+
+Deterministic git-based versioning for applications
+
+Options:
+  -V, --version                output the version number
+  -r, --repo-path <char>       Path to the local git repository
+  -s, --silent                 Run the program without any output
+  -d, --default-branch <char>  Name of the trunk branch of the repository
+  -o, --output-file <char>     If specified, writes the version number to the specified file
+  -h, --help                   display help for command
+```
+
 ## Algorithm overview
 
 This versioning algorithm relies on a git repository with user-defined release branches
