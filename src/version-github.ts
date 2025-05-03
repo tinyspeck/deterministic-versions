@@ -1,12 +1,11 @@
 import { BaseVersioner } from './version-base';
 import { Octokit } from '@octokit/rest';
-import dotenv from 'dotenv';
-
-dotenv.config();
 
 interface GitHubVersionerOptions {
   owner: string;
   repo: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- OctokitOptions.auth is `any`
+  authOptions?: any;
 }
 
 export default class GitHubVersioner extends BaseVersioner {
@@ -18,7 +17,7 @@ export default class GitHubVersioner extends BaseVersioner {
     super();
     this.owner = opts.owner;
     this.repo = opts.repo;
-    this.gitHub = new Octokit({ auth: process.env.GITHUB_TOKEN ?? undefined });
+    this.gitHub = new Octokit({ auth: opts.authOptions });
   }
 
   protected async getHeadSHA(): Promise<string> {

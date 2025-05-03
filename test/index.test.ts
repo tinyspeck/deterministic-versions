@@ -2,6 +2,9 @@ import path from 'path';
 import * as semver from 'semver';
 import LocalVersioner from '../src/version-local';
 import GitHubVersioner from '../src/version-github';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 jest.setTimeout(30000);
 
@@ -13,6 +16,7 @@ const lv: LocalVersioner = new LocalVersioner({
 const gv: GitHubVersioner = new GitHubVersioner({
   owner: 'erickzhao',
   repo: 'desktop-test-fixture',
+  authOptions: process.env.GITHUB_TOKEN,
 });
 
 describe.each([
