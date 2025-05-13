@@ -1,6 +1,6 @@
 import { spawn } from '@malept/cross-spawn-promise';
-import path from 'path';
-import fs from 'fs';
+import path from 'node:path';
+import fs from 'node:fs';
 import { BaseVersioner } from './version-base';
 
 interface LocalVersionerOptions {

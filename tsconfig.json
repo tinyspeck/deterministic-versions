@@ -7,7 +7,7 @@
     "skipLibCheck": true,
     "strict": true,
     "target": "es2016",
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
   },
   "files": ["index.ts", "cli.ts"]
 }
