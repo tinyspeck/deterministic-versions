@@ -10,9 +10,13 @@ async function main() {
   program
     .name('deterministic-versions')
     .description('Deterministic git-based versioning for applications')
-    .version(packageJSON.version, '-v, --version', 'Output the version of this CLI (not the target repository)')
+    .version(
+      packageJSON.version,
+      '-v, --version',
+      'Output the version of this CLI (not the target repository)'
+    )
     .option('-r, --repo-path <char>', 'Path to the local git repository')
-		.option('-s, --silent', 'Run the program without any output')
+    .option('-s, --silent', 'Run the program without any output')
     .option(
       '-d, --default-branch <char>',
       'Name of the default branch of the repository'

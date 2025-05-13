@@ -18,9 +18,10 @@
   "license": "MIT",
   "scripts": {
     "build": "tsc",
-    "lint": "eslint . --fix && prettier . --write",
+    "lint": "eslint . && prettier . --check",
     "prepublishOnly": "npm run build",
-    "test": "jest"
+    "test": "jest",
+    "prepare": "husky"
   },
   "files": [
     "lib"
@@ -33,7 +34,9 @@
     "@typescript-eslint/parser": "^8.24.0",
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^8.5.0",
+    "husky": "^9.1.7",
     "jest": "^28.1.0",
+    "lint-staged": "^16.0.0",
     "prettier": "^2.6.2",
     "ts-jest": "^28.0.2",
     "ts-node": "^10.7.0",
@@ -45,5 +48,14 @@
     "commander": "^13.1.0",
     "dotenv": "^16.0.1",
     "semver": "^7.3.7"
+  },
+  "lint-staged": {
+    "*.{json,md}": [
+      "prettier --write"
+    ],
+    "*.{js,ts,md}": [
+      "prettier --write",
+      "eslint --fix"
+    ]
   }
 }
