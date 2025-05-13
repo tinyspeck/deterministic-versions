@@ -1,12 +1,13 @@
-import path from 'path';
-import * as semver from 'semver';
+import path from 'node:path';
+import dotenv from 'dotenv';
+import semver from 'semver';
+
+import { describe, it, expect, beforeAll, vi } from 'vitest';
+
 import LocalVersioner from '../src/version-local';
 import GitHubVersioner from '../src/version-github';
-import dotenv from 'dotenv';
 
 dotenv.config();
-
-jest.setTimeout(30000);
 
 const lv: LocalVersioner = new LocalVersioner({
   pathToRepo: path.join(__dirname, '..', 'desktop-test-fixture'),
@@ -22,13 +23,13 @@ const gv: GitHubVersioner = new GitHubVersioner({
 describe.each([
   ['Local Versioner', lv],
   ['GitHub Versioner', gv],
-])('%s', (_, v) => {
+])('%s', (_, versioner) => {
   beforeAll(() => {
-    console.error = jest.fn();
+    console.error = vi.fn();
   });
 
   it('generates the correct version from the default branch HEAD', async () => {
-    const latestVersion = await v.getVersionForHead();
+    const latestVersion = await versioner.getVersionForHead();
     expect(latestVersion).toBe('4.2.4');
   });
 
@@ -64,19 +65,19 @@ describe.each([
   ])(
     'generates the correct version from %s',
     async (_, sha, expectedVersion) => {
-      const version = await v.getVersionForCommit(sha);
+      const version = await versioner.getVersionForCommit(sha);
       const parsed = semver.parse(version);
       expect(parsed?.version).toBe(expectedVersion);
     }
   );
 
   it('generates the correct MAS build version number for HEAD', async () => {
-    const res = await v.getMASBuildVersionForHEAD();
+    const res = await versioner.getMASBuildVersionForHEAD();
     expect(res).toBe('0');
   });
 
   it('generates the correct MAS build version number for commit', async () => {
-    const res = await v.getMASBuildVersionForCommit('ece1c3f');
+    const res = await versioner.getMASBuildVersionForCommit('ece1c3f');
     expect(res).toBe('401000008');
   });
 });
