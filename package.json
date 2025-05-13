@@ -20,7 +20,7 @@
     "build": "tsc",
     "lint": "eslint . --fix && prettier . --write",
     "prepublishOnly": "npm run build",
-    "test": "jest"
+    "test": "vitest run"
   },
   "files": [
     "lib"
