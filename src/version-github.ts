@@ -1,11 +1,12 @@
 import { BaseVersioner } from './version-base';
 import { Octokit } from '@octokit/rest';
+import type { OctokitOptions } from '@octokit/core';
 
 interface GitHubVersionerOptions {
   owner: string;
   repo: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- OctokitOptions.auth is `any`
-  authOptions?: any;
+  defaultBranch?: string;
+  authOptions?: OctokitOptions['auth'];
 }
 
 export default class GitHubVersioner extends BaseVersioner {
@@ -17,6 +18,7 @@ export default class GitHubVersioner extends BaseVersioner {
     super();
     this.owner = opts.owner;
     this.repo = opts.repo;
+    this.DEFAULT_BRANCH = opts.defaultBranch || 'main';
     this.gitHub = new Octokit({ auth: opts.authOptions });
   }
 
@@ -30,13 +32,28 @@ export default class GitHubVersioner extends BaseVersioner {
     return response.data.sha;
   }
 
+  /**
+   * Fetches all branches in the GitHub repository via the
+   * `/repos/{owner}/{repo}/branches` endpoint. Uses pagination
+   * via Octokit to ensure all branches are fetched.
+   */
   protected async getAllBranches() {
-    const response = await this.gitHub.rest.repos.listBranches({
-      owner: this.owner,
-      repo: this.repo,
-    });
+    type Branch = Awaited<
+      ReturnType<Octokit['rest']['repos']['listBranches']>
+    >['data'][number];
+    const response: Branch[] = await this.gitHub.paginate(
+      '/repos/{owner}/{repo}/branches',
+      {
+        owner: this.owner,
+        repo: this.repo,
+        per_page: 100,
+        headers: {
+          'X-GitHub-Api-Version': '2022-11-28',
+        },
+      }
+    );
 
-    return response.data.map((branch) => branch.name);
+    return response.map((branch: Branch) => branch.name);
   }
 
   protected async getBranchForCommit(SHA: string) {
