@@ -61,12 +61,16 @@ describe.each([
       [
         'commit branched from trunk',
         '499537a',
-        versioner instanceof GitHubVersioner ? Error : '4.2.65535',
+        versioner instanceof GitHubVersioner
+          ? new Error('Not on release branch')
+          : '4.2.65535',
       ],
       [
         'commit branched from release branch',
         '57deab3',
-        versioner instanceof GitHubVersioner ? Error : '4.0.65535',
+        versioner instanceof GitHubVersioner
+          ? new Error('Not on release branch')
+          : '4.0.65535',
       ],
       [
         'a full length commit SHA',
