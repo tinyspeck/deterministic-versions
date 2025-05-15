@@ -62,9 +62,9 @@ export default class GitHubVersioner extends BaseVersioner {
 
   protected async getBranchForCommit(SHA: string) {
     const branches = [
-      ...(await this.getReleaseBranches()).map((b) => b.branch),
       this.defaultBranch,
-    ].reverse();
+      ...(await this.getReleaseBranches()).map((b) => b.branch),
+    ];
 
     for (const branch of branches) {
       const res = await this.gitHub.rest.repos.compareCommitsWithBasehead({

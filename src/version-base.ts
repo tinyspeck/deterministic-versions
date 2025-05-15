@@ -73,7 +73,7 @@ export abstract class BaseVersioner {
 
     if (currentBranch === this.defaultBranch) {
       let lastReleaseBranchWithAncestor;
-      for (const releaseBranch of releaseBranches.reverse()) {
+      for (const releaseBranch of releaseBranches) {
         let isAncestor = false;
         const releaseBranchPoint = await this.getMergeBase(
           releaseBranch.branch,
@@ -143,7 +143,7 @@ export abstract class BaseVersioner {
         );
 
       // If we're on the first-ever release branch, we count versions from the dawn of time
-      if (releaseBranchIndex === 0) {
+      if (releaseBranchIndex === releaseBranches.length - 1) {
         const firstCommit = await this.getFirstCommit();
         const commitsSinceInitialCommit = await this.getDistance(
           firstCommit,
@@ -152,7 +152,7 @@ export abstract class BaseVersioner {
 
         return `${releaseBranch.version.major}.${releaseBranch.version.minor}.${commitsSinceInitialCommit}`;
       } else {
-        const previousReleaseBranch = releaseBranches[releaseBranchIndex - 1];
+        const previousReleaseBranch = releaseBranches[releaseBranchIndex + 1];
         if (!this.silent)
           console.error(
             'Determined previous release branch to be:',
@@ -280,7 +280,7 @@ export abstract class BaseVersioner {
         };
       })
       .sort((a, b) => {
-        return a.version.compare(b.version);
+        return b.version.compare(a.version);
       });
   }
 
@@ -300,9 +300,7 @@ export abstract class BaseVersioner {
     let nearestReleaseBranch = {
       branch: this.defaultBranch,
       /* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */
-      version: semver
-        .parse(releaseBranches[releaseBranches.length - 1].version.format())!
-        .inc('minor'),
+      version: semver.parse(releaseBranches[0].version.format())!.inc('minor'),
     };
     for (const releaseBranch of releaseBranches) {
       const branchPointOfReleaseBranch = await this.getMergeBase(

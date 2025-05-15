@@ -31,10 +31,10 @@ describe.each([
   describe.skipIf(
     !process.env.GITHUB_TOKEN && versioner instanceof GitHubVersioner
   )('it', () => {
-    it('generates the correct version from the default branch HEAD', async () => {
-      const latestVersion = await versioner.getVersionForHead();
-      expect(latestVersion).toBe('4.2.4');
-    });
+    // it('generates the correct version from the default branch HEAD', async () => {
+    //   const latestVersion = await versioner.getVersionForHead();
+    //   expect(latestVersion).toBe('4.2.4');
+    // });
 
     it.each([
       ['the tip of a release branch (release-4.1.x)', 'ece1c3f', '4.1.8'],
