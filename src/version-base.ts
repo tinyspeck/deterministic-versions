@@ -39,7 +39,7 @@ export abstract class BaseVersioner {
    */
   protected abstract isAncestor(from: string, to: string): Promise<boolean>;
 
-  protected DEFAULT_BRANCH = 'main';
+  protected defaultBranch = 'main';
   protected releaseBranchMatcher =
     /^(?:origin\/)?release-([0-9]+)\.([0-9]+)\.x$/;
 
@@ -71,13 +71,13 @@ export abstract class BaseVersioner {
 
     const releaseBranches = await this.getReleaseBranches();
 
-    if (currentBranch === this.DEFAULT_BRANCH) {
+    if (currentBranch === this.defaultBranch) {
       let lastReleaseBranchWithAncestor;
       for (const releaseBranch of releaseBranches) {
         let isAncestor = false;
         const releaseBranchPoint = await this.getMergeBase(
           releaseBranch.branch,
-          this.DEFAULT_BRANCH
+          this.defaultBranch
         );
         // If we are literally on the merge point consider it not an ancestor
         if (releaseBranchPoint === sha.substring(0, 7)) {
@@ -95,12 +95,12 @@ export abstract class BaseVersioner {
 
         if (!this.silent)
           console.error(
-            `On ${this.DEFAULT_BRANCH} so the version is considered to be the next unreleased minor`,
+            `On ${this.defaultBranch} so the version is considered to be the next unreleased minor`,
             `${targetMajor}.${targetMinor}`
           );
 
         const firstCommitInLatestRelease = await this.getMergeBase(
-          this.DEFAULT_BRANCH,
+          this.defaultBranch,
           lastReleaseBranchWithAncestor.branch
         );
         const commitsSinceLatestReleaseBranch = await this.getDistance(
@@ -109,7 +109,7 @@ export abstract class BaseVersioner {
         );
         if (!this.silent)
           console.error(
-            `${commitsSinceLatestReleaseBranch} commits on ${this.DEFAULT_BRANCH} since the last minor was branched`
+            `${commitsSinceLatestReleaseBranch} commits on ${this.defaultBranch} since the last minor was branched`
           );
 
         return `${targetMajor}.${targetMinor}.${commitsSinceLatestReleaseBranch}`;
@@ -158,11 +158,11 @@ export abstract class BaseVersioner {
           );
 
         const firstCommitInPreviousRelease = await this.getMergeBase(
-          this.DEFAULT_BRANCH,
+          this.defaultBranch,
           previousReleaseBranch.branch
         );
         const firstCommitInCurrentRelease = await this.getMergeBase(
-          this.DEFAULT_BRANCH,
+          this.defaultBranch,
           releaseBranch.branch
         );
         const commitsOnDefaultBranchBetweenReleases = await this.getDistance(
@@ -174,7 +174,7 @@ export abstract class BaseVersioner {
             'Calculated that there were',
             commitsOnDefaultBranchBetweenReleases,
             'commits on the',
-            this.DEFAULT_BRANCH,
+            this.defaultBranch,
             'branch between the previous release and this release'
           );
 
@@ -296,7 +296,7 @@ export abstract class BaseVersioner {
     sha: string
   ) {
     let nearestReleaseBranch = {
-      branch: this.DEFAULT_BRANCH,
+      branch: this.defaultBranch,
       /* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */
       version: semver
         .parse(releaseBranches[releaseBranches.length - 1].version.format())!
@@ -304,13 +304,10 @@ export abstract class BaseVersioner {
     };
     for (const releaseBranch of releaseBranches) {
       const branchPointOfReleaseBranch = await this.getMergeBase(
-        this.DEFAULT_BRANCH,
+        this.defaultBranch,
         releaseBranch.branch
       );
-      const branchPointOfSHA = await this.getMergeBase(
-        this.DEFAULT_BRANCH,
-        sha
-      );
+      const branchPointOfSHA = await this.getMergeBase(this.defaultBranch, sha);
       if (branchPointOfReleaseBranch === branchPointOfSHA) {
         nearestReleaseBranch = releaseBranch;
         break;
