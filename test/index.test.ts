@@ -31,10 +31,10 @@ describe.each([
   describe.skipIf(
     !process.env.GITHUB_TOKEN && versioner instanceof GitHubVersioner
   )('it', () => {
-    // it('generates the correct version from the default branch HEAD', async () => {
-    //   const latestVersion = await versioner.getVersionForHead();
-    //   expect(latestVersion).toBe('4.2.4');
-    // });
+    it('generates the correct version from the default branch HEAD', async () => {
+      const latestVersion = await versioner.getVersionForHead();
+      expect(latestVersion).toBe('4.2.4');
+    });
 
     it.each([
       ['the tip of a release branch (release-4.1.x)', 'ece1c3f', '4.1.8'],
@@ -58,8 +58,16 @@ describe.each([
         '7842465',
         '4.2.1',
       ],
-      ['commit branched from trunk', '499537a', '4.2.65535'],
-      ['commit branched from release branch', '57deab3', '4.0.65535'],
+      [
+        'commit branched from trunk',
+        '499537a',
+        versioner instanceof GitHubVersioner ? Error : '4.2.65535',
+      ],
+      [
+        'commit branched from release branch',
+        '57deab3',
+        versioner instanceof GitHubVersioner ? Error : '4.0.65535',
+      ],
       [
         'a full length commit SHA',
         'dc328b57827d8619719f1783a21b05968652eaf3',
@@ -68,9 +76,15 @@ describe.each([
     ])(
       'generates the correct version from %s',
       async (_, sha, expectedVersion) => {
-        const version = await versioner.getVersionForCommit(sha);
-        const parsed = semver.parse(version);
-        expect(parsed?.version).toBe(expectedVersion);
+        if (expectedVersion instanceof Error) {
+          await expect(versioner.getVersionForCommit(sha)).rejects.toThrow(
+            Error
+          );
+        } else {
+          const version = await versioner.getVersionForCommit(sha);
+          const parsed = semver.parse(version);
+          expect(parsed?.version).toBe(expectedVersion);
+        }
       }
     );
 

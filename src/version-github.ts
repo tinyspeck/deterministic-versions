@@ -79,7 +79,9 @@ export default class GitHubVersioner extends BaseVersioner {
       }
     }
 
-    throw new Error('getBranchForCommit: No release branch found');
+    throw new Error(
+      'Not on release branch: GitHub Versioner does not support lookup for non-release branches'
+    );
   }
 
   protected async getMergeBase(from: string, to: string) {
