@@ -73,7 +73,7 @@ export abstract class BaseVersioner {
 
     if (currentBranch === this.defaultBranch) {
       let lastReleaseBranchWithAncestor;
-      for (const releaseBranch of releaseBranches) {
+      for (const releaseBranch of releaseBranches.reverse()) {
         let isAncestor = false;
         const releaseBranchPoint = await this.getMergeBase(
           releaseBranch.branch,
@@ -85,8 +85,10 @@ export abstract class BaseVersioner {
         } else {
           isAncestor = await this.isAncestor(releaseBranchPoint, sha);
         }
-        if (!isAncestor) break;
-        lastReleaseBranchWithAncestor = releaseBranch;
+        if (isAncestor) {
+          lastReleaseBranchWithAncestor = releaseBranch;
+          break;
+        }
       }
 
       if (lastReleaseBranchWithAncestor) {

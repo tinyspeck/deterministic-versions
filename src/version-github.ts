@@ -13,6 +13,7 @@ export default class GitHubVersioner extends BaseVersioner {
   private gitHub: Octokit;
   private owner: string;
   private repo: string;
+  private cachedBranches: string[] | undefined;
 
   constructor(opts: GitHubVersionerOptions) {
     super();
@@ -41,28 +42,29 @@ export default class GitHubVersioner extends BaseVersioner {
     type Branch = Awaited<
       ReturnType<Octokit['rest']['repos']['listBranches']>
     >['data'][number];
-    const response: Branch[] = await this.gitHub.paginate(
-      '/repos/{owner}/{repo}/branches',
-      {
-        owner: this.owner,
-        repo: this.repo,
-        per_page: 100,
-        headers: {
-          'X-GitHub-Api-Version': '2022-11-28',
-        },
-      }
-    );
+    if (!this.cachedBranches) {
+      const response: Branch[] = await this.gitHub.paginate(
+        '/repos/{owner}/{repo}/branches',
+        {
+          owner: this.owner,
+          repo: this.repo,
+          per_page: 100,
+          headers: {
+            'X-GitHub-Api-Version': '2022-11-28',
+          },
+        }
+      );
 
-    return response.map((branch: Branch) => branch.name);
+      this.cachedBranches = response.map((branch: Branch) => branch.name);
+    }
+    return this.cachedBranches;
   }
 
   protected async getBranchForCommit(SHA: string) {
     const branches = [
       ...(await this.getReleaseBranches()).map((b) => b.branch),
       this.defaultBranch,
-    ];
-
-    const possibleBranches: string[] = [];
+    ].reverse();
 
     for (const branch of branches) {
       const res = await this.gitHub.rest.repos.compareCommitsWithBasehead({
@@ -72,31 +74,12 @@ export default class GitHubVersioner extends BaseVersioner {
       });
 
       if (res.data.status === 'behind' || res.data.status === 'identical') {
-        possibleBranches.push(branch);
+        if (!this.silent) console.error(`Found release branch ${branch}.`);
+        return branch;
       }
     }
-    if (!this.silent)
-      console.error(
-        `Found release branch(es) [${possibleBranches.join(', ')}].`
-      );
 
-    possibleBranches.sort((a, b) => {
-      if (a === this.defaultBranch) return -1;
-      if (b === this.defaultBranch) return 1;
-      /* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */
-      const [, aMinor] = this.releaseBranchMatcher.exec(a)!;
-      /* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */
-      const [, bMinor] = this.releaseBranchMatcher.exec(b)!;
-      return parseInt(aMinor, 10) - parseInt(bMinor, 10);
-    });
-    if (!this.silent)
-      console.error(
-        `Determined branch order [${possibleBranches.join(
-          ', '
-        )}]. Using first one.`
-      );
-
-    return possibleBranches[0];
+    throw new Error('getBranchForCommit: No release branch found');
   }
 
   protected async getMergeBase(from: string, to: string) {
