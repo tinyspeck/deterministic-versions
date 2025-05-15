@@ -17,7 +17,7 @@ export default class LocalVersioner extends BaseVersioner {
       ? path.resolve(opts.pathToRepo)
       : process.cwd();
 
-    this.DEFAULT_BRANCH = opts.defaultBranch || 'main';
+    this.defaultBranch = opts.defaultBranch || 'main';
 
     if (!fs.existsSync(this.pathToRepo)) {
       throw new Error(
@@ -52,7 +52,7 @@ export default class LocalVersioner extends BaseVersioner {
 
     const possibleReleaseBranches = possibleBranches.filter(
       (branch) =>
-        this.releaseBranchMatcher.test(branch) || branch === this.DEFAULT_BRANCH
+        this.releaseBranchMatcher.test(branch) || branch === this.defaultBranch
     );
 
     // If we're searching for the current HEAD, prioritize the current
@@ -75,8 +75,8 @@ export default class LocalVersioner extends BaseVersioner {
         `Found release branch(es) [${possibleReleaseBranches.join(', ')}].`
       );
     possibleReleaseBranches.sort((a, b) => {
-      if (a === this.DEFAULT_BRANCH) return -1;
-      if (b === this.DEFAULT_BRANCH) return 1;
+      if (a === this.defaultBranch) return -1;
+      if (b === this.defaultBranch) return 1;
       /* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */
       const [, aMinor] = this.releaseBranchMatcher.exec(a)!;
       /* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */
@@ -98,12 +98,12 @@ export default class LocalVersioner extends BaseVersioner {
     // For example, this matters if we're on a detached HEAD
     // on the main branch.
     const fixedFrom =
-      (from === this.DEFAULT_BRANCH || this.releaseBranchMatcher.test(from)) &&
+      (from === this.defaultBranch || this.releaseBranchMatcher.test(from)) &&
       !from.startsWith('origin/')
         ? `origin/${from}`
         : from;
     const fixedTo =
-      (to === this.DEFAULT_BRANCH || this.releaseBranchMatcher.test(to)) &&
+      (to === this.defaultBranch || this.releaseBranchMatcher.test(to)) &&
       !to.startsWith('origin/')
         ? `origin/${to}`
         : to;

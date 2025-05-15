@@ -1,11 +1,12 @@
 import { BaseVersioner } from './version-base';
 import { Octokit } from '@octokit/rest';
+import type { OctokitOptions } from '@octokit/core';
 
 interface GitHubVersionerOptions {
   owner: string;
   repo: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- OctokitOptions.auth is `any`
-  authOptions?: any;
+  defaultBranch?: string;
+  authOptions?: OctokitOptions['auth'];
 }
 
 export default class GitHubVersioner extends BaseVersioner {
@@ -17,6 +18,7 @@ export default class GitHubVersioner extends BaseVersioner {
     super();
     this.owner = opts.owner;
     this.repo = opts.repo;
+    this.defaultBranch = opts.defaultBranch || 'main';
     this.gitHub = new Octokit({ auth: opts.authOptions });
   }
 
@@ -24,25 +26,40 @@ export default class GitHubVersioner extends BaseVersioner {
     const response = await this.gitHub.rest.repos.getCommit({
       owner: this.owner,
       repo: this.repo,
-      ref: this.DEFAULT_BRANCH,
+      ref: this.defaultBranch,
     });
 
     return response.data.sha;
   }
 
+  /**
+   * Fetches all branches in the GitHub repository via the
+   * `/repos/{owner}/{repo}/branches` endpoint. Uses pagination
+   * via Octokit to ensure all branches are fetched.
+   */
   protected async getAllBranches() {
-    const response = await this.gitHub.rest.repos.listBranches({
-      owner: this.owner,
-      repo: this.repo,
-    });
+    type Branch = Awaited<
+      ReturnType<Octokit['rest']['repos']['listBranches']>
+    >['data'][number];
+    const response: Branch[] = await this.gitHub.paginate(
+      '/repos/{owner}/{repo}/branches',
+      {
+        owner: this.owner,
+        repo: this.repo,
+        per_page: 100,
+        headers: {
+          'X-GitHub-Api-Version': '2022-11-28',
+        },
+      }
+    );
 
-    return response.data.map((branch) => branch.name);
+    return response.map((branch: Branch) => branch.name);
   }
 
   protected async getBranchForCommit(SHA: string) {
     const branches = [
       ...(await this.getReleaseBranches()).map((b) => b.branch),
-      this.DEFAULT_BRANCH,
+      this.defaultBranch,
     ];
 
     const possibleBranches: string[] = [];
@@ -64,8 +81,8 @@ export default class GitHubVersioner extends BaseVersioner {
       );
 
     possibleBranches.sort((a, b) => {
-      if (a === this.DEFAULT_BRANCH) return -1;
-      if (b === this.DEFAULT_BRANCH) return 1;
+      if (a === this.defaultBranch) return -1;
+      if (b === this.defaultBranch) return 1;
       /* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */
       const [, aMinor] = this.releaseBranchMatcher.exec(a)!;
       /* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */
@@ -110,7 +127,7 @@ export default class GitHubVersioner extends BaseVersioner {
     const lastCommit: any = await this.gitHub.graphql(
       `{
         repository(name: "${this.repo}", owner: "${this.owner}") {
-          ref(qualifiedName: "${this.DEFAULT_BRANCH}") {
+          ref(qualifiedName: "${this.defaultBranch}") {
             target {
               ... on Commit {
                 history(first: 1) {
@@ -136,7 +153,7 @@ export default class GitHubVersioner extends BaseVersioner {
     const firstCommit: any = await this.gitHub.graphql(
       `{
         repository(name: "${this.repo}", owner: "${this.owner}") {
-          ref(qualifiedName: "${this.DEFAULT_BRANCH}") {
+          ref(qualifiedName: "${this.defaultBranch}") {
             target {
               ... on Commit {
                 history(first: 1, after: "${magicIncantation}") {
