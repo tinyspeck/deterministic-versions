@@ -58,8 +58,20 @@ describe.each([
         '7842465',
         '4.2.1',
       ],
-      ['commit branched from trunk', '499537a', '4.2.65535'],
-      ['commit branched from release branch', '57deab3', '4.0.65535'],
+      [
+        'commit branched from trunk',
+        '499537a',
+        versioner instanceof GitHubVersioner
+          ? new Error('Not on release branch')
+          : '4.2.65535',
+      ],
+      [
+        'commit branched from release branch',
+        '57deab3',
+        versioner instanceof GitHubVersioner
+          ? new Error('Not on release branch')
+          : '4.0.65535',
+      ],
       [
         'a full length commit SHA',
         'dc328b57827d8619719f1783a21b05968652eaf3',
@@ -68,9 +80,15 @@ describe.each([
     ])(
       'generates the correct version from %s',
       async (_, sha, expectedVersion) => {
-        const version = await versioner.getVersionForCommit(sha);
-        const parsed = semver.parse(version);
-        expect(parsed?.version).toBe(expectedVersion);
+        if (expectedVersion instanceof Error) {
+          await expect(versioner.getVersionForCommit(sha)).rejects.toThrow(
+            Error
+          );
+        } else {
+          const version = await versioner.getVersionForCommit(sha);
+          const parsed = semver.parse(version);
+          expect(parsed?.version).toBe(expectedVersion);
+        }
       }
     );
 
