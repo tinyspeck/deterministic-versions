@@ -280,7 +280,8 @@ export abstract class BaseVersioner {
         };
       })
       .sort((a, b) => {
-        return b.version.compare(a.version);
+        // Sorted in descending order.
+        return a.version.compare(b.version) * -1;
       });
   }
 
