@@ -85,9 +85,7 @@ export default class LocalVersioner extends BaseVersioner {
     });
     if (!this.silent)
       console.error(
-        `Determined branch order [${possibleReleaseBranches.join(
-          ', '
-        )}]. Using first one.`
+        `Determined branch order [${possibleReleaseBranches.join(', ')}]. Using first one.`
       );
     return possibleReleaseBranches[0];
   }
