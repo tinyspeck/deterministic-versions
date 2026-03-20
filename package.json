@@ -8,9 +8,7 @@
     "type": "git",
     "url": "git+ssh://git@github.com/tinyspeck/deterministic-versions.git"
   },
-  "bin": {
-    "deterministic-versions": "lib/cli.js"
-  },
+  "bin": "lib/cli.js",
   "files": [
     "lib"
   ],
@@ -34,9 +32,9 @@
     "@types/node": "^22.13.1",
     "@types/semver": "^7.7.1",
     "husky": "^9.1.7",
-    "lint-staged": "^16.0.0",
-    "oxfmt": "^0.41.0",
-    "oxlint": "^1.56.0",
+    "lint-staged": "^16.3.0",
+    "oxfmt": "^0.39.0",
+    "oxlint": "^1.52.0",
     "typescript": "^5.9.3",
     "vitest": "^4.1.0"
   },
@@ -51,5 +49,6 @@
   },
   "engines": {
     "node": ">=22"
-  }
+  },
+  "packageManager": "yarn@4.13.0"
 }
