@@ -61,10 +61,26 @@ export default class GitHubVersioner extends BaseVersioner {
   }
 
   protected async getBranchForCommit(SHA: string) {
-    const branches = [
-      this.defaultBranch,
-      ...(await this.getReleaseBranches()).map((b) => b.branch),
-    ];
+    const releaseBranches = (await this.getReleaseBranches()).map(
+      (b) => b.branch
+    );
+    const branches = [this.defaultBranch, ...releaseBranches];
+
+    // When a release branch is created directly off the default branch,
+    // the tip commit exists on both. Prefer the release branch by checking
+    // for identical (tip) matches on release branches first.
+    for (const branch of releaseBranches) {
+      const res = await this.gitHub.rest.repos.compareCommitsWithBasehead({
+        owner: this.owner,
+        repo: this.repo,
+        basehead: `${branch}...${SHA}`,
+      });
+
+      if (res.data.status === 'identical') {
+        if (!this.silent) console.error(`Found release branch ${branch}.`);
+        return branch;
+      }
+    }
 
     for (const branch of branches) {
       const res = await this.gitHub.rest.repos.compareCommitsWithBasehead({
