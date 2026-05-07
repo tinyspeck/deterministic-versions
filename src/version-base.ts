@@ -303,12 +303,12 @@ export abstract class BaseVersioner {
       /* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */
       version: semver.parse(releaseBranches[0].version.format())!.inc('minor'),
     };
+    const branchPointOfSHA = await this.getMergeBase(this.defaultBranch, sha);
     for (const releaseBranch of releaseBranches) {
       const branchPointOfReleaseBranch = await this.getMergeBase(
         this.defaultBranch,
         releaseBranch.branch
       );
-      const branchPointOfSHA = await this.getMergeBase(this.defaultBranch, sha);
       if (branchPointOfReleaseBranch === branchPointOfSHA) {
         nearestReleaseBranch = releaseBranch;
         break;
