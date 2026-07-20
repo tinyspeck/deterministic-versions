@@ -1,6 +1,6 @@
 {
   "name": "deterministic-versions",
-  "version": "0.5.4",
+  "version": "0.5.5",
   "description": "deterministic git-based versioning for applications",
   "license": "MIT",
   "author": "Erick Zhao <erick@hotmail.ca>",
