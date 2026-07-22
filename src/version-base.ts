@@ -298,23 +298,26 @@ export abstract class BaseVersioner {
     releaseBranches: Array<ReleaseBranch>,
     sha: string
   ) {
-    let nearestReleaseBranch = {
+    const fallbackReleaseBranch = {
       branch: this.defaultBranch,
       /* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */
       version: semver.parse(releaseBranches[0].version.format())!.inc('minor'),
     };
-    for (const releaseBranch of releaseBranches) {
-      const branchPointOfReleaseBranch = await this.getMergeBase(
-        this.defaultBranch,
-        releaseBranch.branch
-      );
-      const branchPointOfSHA = await this.getMergeBase(this.defaultBranch, sha);
-      if (branchPointOfReleaseBranch === branchPointOfSHA) {
-        nearestReleaseBranch = releaseBranch;
-        break;
-      }
-    }
 
-    return nearestReleaseBranch;
+    const branchPointOfSHA = await this.getMergeBase(this.defaultBranch, sha);
+    const branchPointsOfReleaseBranches = await Promise.all(
+      releaseBranches.map((releaseBranch) =>
+        this.getMergeBase(this.defaultBranch, releaseBranch.branch)
+      )
+    );
+
+    // releaseBranches is sorted descending, so the first match is the nearest.
+    const nearestIndex = branchPointsOfReleaseBranches.findIndex(
+      (branchPoint) => branchPoint === branchPointOfSHA
+    );
+
+    return nearestIndex === -1
+      ? fallbackReleaseBranch
+      : releaseBranches[nearestIndex];
   }
 }
