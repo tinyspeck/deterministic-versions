@@ -2,6 +2,10 @@ import { BaseVersioner } from './version-base';
 import { Octokit } from '@octokit/rest';
 import type { OctokitOptions } from '@octokit/core';
 
+type CompareData = Awaited<
+  ReturnType<Octokit['rest']['repos']['compareCommitsWithBasehead']>
+>['data'];
+
 interface GitHubVersionerOptions {
   owner: string;
   repo: string;
@@ -14,6 +18,7 @@ export default class GitHubVersioner extends BaseVersioner {
   private owner: string;
   private repo: string;
   private cachedBranches: string[] | undefined;
+  private compareCache = new Map<string, CompareData>();
 
   constructor(opts: GitHubVersionerOptions) {
     super();
@@ -21,6 +26,24 @@ export default class GitHubVersioner extends BaseVersioner {
     this.repo = opts.repo;
     this.defaultBranch = opts.defaultBranch || 'main';
     this.gitHub = new Octokit({ auth: opts.authOptions });
+  }
+
+  private async getCompareResult(
+    base: string,
+    head: string
+  ): Promise<CompareData> {
+    const key = `${base}...${head}`;
+    const cached = this.compareCache.get(key);
+    if (cached) return cached;
+
+    const res = await this.gitHub.rest.repos.compareCommitsWithBasehead({
+      owner: this.owner,
+      repo: this.repo,
+      basehead: key,
+    });
+
+    this.compareCache.set(key, res.data);
+    return res.data;
   }
 
   protected async getHeadSHA(): Promise<string> {
@@ -83,13 +106,9 @@ export default class GitHubVersioner extends BaseVersioner {
     }
 
     for (const branch of branches) {
-      const res = await this.gitHub.rest.repos.compareCommitsWithBasehead({
-        owner: this.owner,
-        repo: this.repo,
-        basehead: `${branch}...${SHA}`,
-      });
+      const data = await this.getCompareResult(branch, SHA);
 
-      if (res.data.status === 'behind' || res.data.status === 'identical') {
+      if (data.status === 'behind' || data.status === 'identical') {
         if (!this.silent) console.error(`Found release branch ${branch}.`);
         return branch;
       }
@@ -101,23 +120,13 @@ export default class GitHubVersioner extends BaseVersioner {
   }
 
   protected async getMergeBase(from: string, to: string) {
-    const res = await this.gitHub.rest.repos.compareCommitsWithBasehead({
-      owner: this.owner,
-      repo: this.repo,
-      basehead: `${from}...${to}`,
-    });
-
-    return res.data.merge_base_commit.sha.slice(0, 7).trim();
+    const data = await this.getCompareResult(from, to);
+    return data.merge_base_commit.sha.slice(0, 7).trim();
   }
 
   protected async isAncestor(from: string, to: string) {
-    const res = await this.gitHub.rest.repos.compareCommitsWithBasehead({
-      owner: this.owner,
-      repo: this.repo,
-      basehead: `${from}...${to}`,
-    });
-
-    return res.data.status === 'ahead';
+    const data = await this.getCompareResult(from, to);
+    return data.status === 'ahead';
   }
 
   protected async getFirstCommit() {
@@ -181,12 +190,7 @@ export default class GitHubVersioner extends BaseVersioner {
   }
 
   protected async getDistance(from: string, to: string) {
-    const res = await this.gitHub.rest.repos.compareCommitsWithBasehead({
-      owner: this.owner,
-      repo: this.repo,
-      basehead: `${from}...${to}`,
-    });
-
-    return res.data.total_commits;
+    const data = await this.getCompareResult(from, to);
+    return data.total_commits;
   }
 }
