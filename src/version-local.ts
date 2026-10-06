@@ -74,6 +74,29 @@ export default class LocalVersioner extends BaseVersioner {
       console.error(
         `Found release branch(es) [${possibleReleaseBranches.join(', ')}].`
       );
+
+    // When a release branch is created directly off the default branch,
+    // the tip commit exists on both branches. In that case, prefer the
+    // release branch — otherwise getMASBuildVersionForCommit returns 0.
+    // We detect this by checking if the commit is at the tip of a release branch.
+    const releaseBranchesOnly = possibleReleaseBranches.filter(
+      (b) => b !== this.defaultBranch
+    );
+    if (releaseBranchesOnly.length > 0) {
+      for (const branch of releaseBranchesOnly) {
+        const branchTip = (
+          await this.spawnGit(['rev-parse', `origin/${branch}`])
+        ).trim();
+        if (branchTip.slice(0, 7) === SHA.slice(0, 7)) {
+          if (!this.silent)
+            console.error(
+              `Commit is at the tip of release branch ${branch}, preferring it over ${this.defaultBranch}.`
+            );
+          return branch;
+        }
+      }
+    }
+
     possibleReleaseBranches.sort((a, b) => {
       if (a === this.defaultBranch) return -1;
       if (b === this.defaultBranch) return 1;
